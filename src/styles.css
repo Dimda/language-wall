@@ -388,11 +388,12 @@ textarea {
 }
 
 .eye {
-  fill: #fff2a0;
+  fill: #ffe040;
+  filter: drop-shadow(0 0 3px #ff3a1a) drop-shadow(0 0 6px #ff3a1a);
 }
 
 .pupil {
-  fill: #000;
+  fill: #1a0005;
 }
 
 .brow {
@@ -400,7 +401,9 @@ textarea {
 }
 
 .eyes {
-  animation: glare 3s steps(1) infinite;
+  animation: glare 4.2s steps(1) infinite;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 @keyframes glare {
@@ -408,8 +411,103 @@ textarea {
     transform: scaleY(1);
   }
   96% {
-    transform: scaleY(0.1);
-    transform-origin: 50% 35%;
+    transform: scaleY(0.15);
+  }
+}
+
+.enraged .eye {
+  fill: #ff4020;
+  animation: blink 0.4s steps(2) infinite;
+}
+
+/* dragon parts */
+
+.wing-membrane {
+  fill: #4a1238;
+  stroke: #12030c;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.wing-shade {
+  fill: #6a1a4a;
+}
+
+.wing-bone {
+  stroke: #20060f;
+  stroke-width: 4;
+}
+
+.wing-claw,
+.horn {
+  fill: #e8e0d0;
+  stroke: #12030c;
+  stroke-width: 2;
+}
+
+.wing {
+  transform-box: view-box;
+  transform-origin: 0 20px;
+  animation: flap 1.6s steps(4) infinite;
+}
+
+@keyframes flap {
+  0%,
+  100% {
+    transform: rotate(0deg) scaleX(1);
+  }
+  50% {
+    transform: rotate(-14deg) scaleX(0.82);
+  }
+}
+
+.enraged .wing {
+  animation-duration: 0.7s;
+}
+
+.maw {
+  fill: #12030c;
+}
+
+.maw-inner {
+  fill: #6a0a1a;
+}
+
+.fang {
+  fill: #ffffff;
+  stroke: #12030c;
+  stroke-width: 1.5;
+}
+
+.tongue {
+  animation: flick 2.8s steps(3) infinite;
+}
+
+.tongue-shape {
+  fill: #e0304a;
+  stroke: #12030c;
+  stroke-width: 2;
+}
+
+@keyframes flick {
+  0%,
+  40%,
+  100% {
+    transform: scaleY(0);
+  }
+  46%,
+  54%,
+  62%,
+  70% {
+    transform: scaleY(1) rotate(-8deg);
+  }
+  50%,
+  58%,
+  66% {
+    transform: scaleY(1) rotate(8deg);
+  }
+  76% {
+    transform: scaleY(0.4);
   }
 }
 
@@ -657,10 +755,7 @@ textarea {
 }
 
 .defeat-wall {
-  font-size: clamp(56px, 14vw, 120px);
-  color: var(--brick-1);
-  text-shadow: 6px 6px 0 #000;
-  animation: bob 2.4s steps(4) infinite;
+  width: min(560px, 100%);
 }
 
 .bridge-scene {
@@ -925,7 +1020,7 @@ details.hint summary {
 }
 
 .boss-area .boss {
-  width: min(380px, 100%);
+  width: min(520px, 100%);
 }
 
 .party-area {

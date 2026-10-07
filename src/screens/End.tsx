@@ -1,4 +1,5 @@
 import type { PlayerPublic, Snapshot } from '../../shared/types';
+import { Boss } from '../components/Boss';
 import { Sprite } from '../components/sprites';
 import { Typewriter } from '../components/ui';
 import { socket } from '../net';
@@ -25,8 +26,8 @@ export function End({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic | n
           <div className="shore right">Kansai</div>
         </div>
       ) : (
-        <div className="defeat-wall" aria-hidden>
-          言葉の壁
+        <div className="defeat-wall">
+          <Boss hpPct={100} hitKey={0} />
         </div>
       )}
 
