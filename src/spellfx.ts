@@ -1,49 +1,188 @@
-import { IMPACT_MS, type Tier } from '../shared/types';
+import { type Element, IMPACT_MS, type Tier } from '../shared/types';
 
 /**
- * Canvas particle engine for spells. Chunky square particles + additive blending to stay
- * "16-bit". Positions are canvas-relative CSS pixels.
+ * Retro spell effects in the style of 16-bit JRPGs: everything is drawn on a low-resolution
+ * canvas (1 pixel = SCALE screen pixels) with hard edges, small per-element palettes, and
+ * stepped animation at FPS frames per second. Positions passed in are stage CSS pixels.
  */
+
+const SCALE = 3;
+const FPS = 12;
+const FRAME_MS = 1000 / FPS;
+const CHANT_MS = 700;
+
+type Ctx = CanvasRenderingContext2D;
 
 interface Pt {
   x: number;
   y: number;
 }
 
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  max: number;
-  size: number;
-  color: string;
-  gravity: number;
-}
-
-interface Spell {
+interface Effect {
   start: number;
-  casters: Pt[];
-  target: Pt;
-  gather: Pt;
-  color: string;
-  tier: Tier;
-  impacted: boolean;
+  dur: number;
+  /** f = frame index since start, t = ms since start. */
+  draw: (c: Ctx, f: number, t: number) => void;
 }
 
-const CHARGE_MS = 700;
+const PALETTE: Record<Element, string[]> = {
+  // light → dark
+  fire: ['#fff8a0', '#ffc030', '#ff6a10', '#c02000'],
+  ice: ['#ffffff', '#b8f0ff', '#4ab0ff', '#1a50c0'],
+  thunder: ['#ffffff', '#ffff60', '#ffc000', '#a06000'],
+  wind: ['#ffffff', '#b8ffb0', '#40d060', '#107030'],
+  light: ['#ffffff', '#fff8c0', '#ffe060', '#c0a020'],
+  shadow: ['#e0b0ff', '#a050e0', '#5a1a90', '#1a0828'],
+};
+
+function rng(seed: number) {
+  let s = (seed * 2654435761) >>> 0 || 1;
+  return () => {
+    s ^= s << 13;
+    s ^= s >>> 17;
+    s ^= s << 5;
+    return ((s >>> 0) % 10000) / 10000;
+  };
+}
+
+// ── pixel primitives (low-res coordinates) ──────────────
+
+function px(c: Ctx, x: number, y: number, col: string) {
+  c.fillStyle = col;
+  c.fillRect(Math.round(x), Math.round(y), 1, 1);
+}
+
+function box(c: Ctx, x: number, y: number, w: number, h: number, col: string) {
+  c.fillStyle = col;
+  c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+}
+
+function disc(c: Ctx, cx: number, cy: number, r: number, col: string) {
+  c.fillStyle = col;
+  const R = Math.round(r);
+  for (let y = -R; y <= R; y++) {
+    const w = Math.round(Math.sqrt(Math.max(0, r * r - y * y)));
+    c.fillRect(Math.round(cx - w), Math.round(cy + y), w * 2 + 1, 1);
+  }
+}
+
+function ring(c: Ctx, cx: number, cy: number, r: number, col: string) {
+  const steps = Math.max(12, Math.round(r * 6));
+  for (let i = 0; i < steps; i++) {
+    const a = (i / steps) * Math.PI * 2;
+    px(c, cx + Math.cos(a) * r, cy + Math.sin(a) * r, col);
+  }
+}
+
+function line(c: Ctx, x0: number, y0: number, x1: number, y1: number, col: string, thick = 1) {
+  let x = Math.round(x0);
+  let y = Math.round(y0);
+  const X = Math.round(x1);
+  const Y = Math.round(y1);
+  const dx = Math.abs(X - x);
+  const dy = -Math.abs(Y - y);
+  const sx = x < X ? 1 : -1;
+  const sy = y < Y ? 1 : -1;
+  let err = dx + dy;
+  c.fillStyle = col;
+  for (;;) {
+    c.fillRect(x - Math.floor(thick / 2), y, thick, 1);
+    if (x === X && y === Y) break;
+    const e2 = 2 * err;
+    if (e2 >= dy) {
+      err += dy;
+      x += sx;
+    }
+    if (e2 <= dx) {
+      err += dx;
+      y += sy;
+    }
+  }
+}
+
+/** Classic 4-point twinkle star. */
+function star(c: Ctx, x: number, y: number, r: number, outer: string, core = '#ffffff') {
+  const R = Math.max(1, Math.round(r));
+  for (let i = 1; i <= R; i++) {
+    px(c, x + i, y, outer);
+    px(c, x - i, y, outer);
+    px(c, x, y + i, outer);
+    px(c, x, y - i, outer);
+  }
+  if (R >= 3) {
+    px(c, x + 1, y + 1, outer);
+    px(c, x - 1, y - 1, outer);
+    px(c, x + 1, y - 1, outer);
+    px(c, x - 1, y + 1, outer);
+  }
+  px(c, x, y, core);
+}
+
+function diamond(c: Ctx, cx: number, cy: number, r: number, pal: string[]) {
+  const R = Math.round(r);
+  for (let y = -R; y <= R; y++) {
+    const w = R - Math.abs(y);
+    for (let x = -w; x <= w; x++) {
+      const edge = Math.abs(x) === w || Math.abs(y) === R;
+      px(c, cx + x, cy + y, edge ? pal[3] : x < 0 && y < 0 ? pal[0] : x + y < 0 ? pal[1] : pal[2]);
+    }
+  }
+}
+
+/** Energy ball: dark rim, body, bright core and a highlight that spins; sputters when weak. */
+function orb(c: Ctx, x: number, y: number, r: number, pal: string[], f: number, sputter: boolean) {
+  const pulse = f % 2 ? 0.5 : 0;
+  disc(c, x, y, r + 1 + pulse, pal[3]);
+  disc(c, x, y, r + pulse, pal[2]);
+  disc(c, x - r * 0.2, y - r * 0.2, r * 0.6, pal[1]);
+  disc(c, x - r * 0.3, y - r * 0.3, Math.max(0.6, r * 0.25), pal[0]);
+  const a = f * 1.3;
+  if (!sputter || f % 2) px(c, x + Math.cos(a) * (r + 2), y + Math.sin(a) * (r + 2), pal[0]);
+  if (sputter && f % 3 === 0) px(c, x + r + 2, y - r, '#999999');
+}
+
+/** One flame tongue: wide hot base narrowing to a flickering tip. */
+function flame(c: Ctx, x: number, baseY: number, h: number, w: number, pal: string[], seed: number) {
+  const r = rng(seed);
+  for (let row = 0; row < h; row++) {
+    const k = row / h;
+    const half = Math.max(0, Math.round(w * (1 - k) * (0.7 + 0.3 * Math.sin(k * 3.1)) + (r() - 0.5) * 2));
+    const sway = Math.round(Math.sin(k * 4 + seed) * 1.5 * k);
+    for (let dx = -half; dx <= half; dx++) {
+      const edge = Math.abs(dx) >= half - 0;
+      const col = k > 0.75 ? pal[3] : edge ? pal[2] : Math.abs(dx) < half * 0.4 && k < 0.5 ? pal[0] : pal[1];
+      px(c, x + dx + sway, baseY - row, col);
+    }
+  }
+}
+
+function bolt(c: Ctx, x0: number, y0: number, x1: number, y1: number, pal: string[], seed: number) {
+  const r = rng(seed);
+  const segs = 7;
+  let px0 = x0;
+  let py0 = y0;
+  for (let i = 1; i <= segs; i++) {
+    const k = i / segs;
+    const nx = i === segs ? x1 : x0 + (x1 - x0) * k + (r() - 0.5) * 14;
+    const ny = y0 + (y1 - y0) * k;
+    line(c, px0, py0, nx, ny, pal[2], 3);
+    line(c, px0, py0, nx, ny, pal[0], 1);
+    if (r() < 0.35) line(c, nx, ny, nx + (r() - 0.5) * 12, ny + 6, pal[1], 1);
+    px0 = nx;
+    py0 = ny;
+  }
+}
+
+// ── engine ──────────────────────────────────────────────
 
 export class SpellFX {
-  private ctx: CanvasRenderingContext2D;
-  private particles: Particle[] = [];
-  private spells: Spell[] = [];
-  private rings: { x: number; y: number; r: number; max: number; color: string; born: number }[] = [];
-  private flashUntil = 0;
-  private flashColor = '#fff';
+  private ctx: Ctx;
+  private effects: Effect[] = [];
   private raf = 0;
+  private lastFrame = -1;
   private w = 0;
   private h = 0;
+  private flashes: { at: number; col: string }[] = [];
 
   constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
@@ -51,192 +190,326 @@ export class SpellFX {
   }
 
   resize(): void {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const rect = this.canvas.getBoundingClientRect();
-    this.w = rect.width;
-    this.h = rect.height;
-    this.canvas.width = Math.round(rect.width * dpr);
-    this.canvas.height = Math.round(rect.height * dpr);
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.w = Math.max(1, Math.ceil(rect.width / SCALE));
+    this.h = Math.max(1, Math.ceil(rect.height / SCALE));
+    this.canvas.width = this.w;
+    this.canvas.height = this.h;
+    this.ctx.imageSmoothingEnabled = false;
   }
 
   destroy(): void {
     cancelAnimationFrame(this.raf);
   }
 
-  cast(casters: Pt[], target: Pt, color: string, tier: Tier): void {
-    const cx = casters.reduce((s, p) => s + p.x, 0) / Math.max(1, casters.length);
-    const gather = { x: (cx + target.x) / 2 + 30, y: Math.min(target.y, ...casters.map((c) => c.y)) - 40 };
-    this.spells.push({ start: performance.now(), casters, target, gather, color, tier, impacted: false });
+  private low(p: Pt): Pt {
+    return { x: Math.round(p.x / SCALE), y: Math.round(p.y / SCALE) };
+  }
+
+  private add(dur: number, draw: Effect['draw'], delay = 0): void {
+    this.effects.push({ start: performance.now() + delay, dur, draw });
     this.loop();
   }
 
-  /** Small sparkle around a typing caster. */
+  private flash(delay: number, col: string): void {
+    this.flashes.push({ at: performance.now() + delay, col });
+  }
+
+  /** Twinkling star above a typing caster. */
   sparkle(p: Pt, color: string): void {
-    for (let i = 0; i < 2; i++) {
-      this.emit(p.x + (Math.random() - 0.5) * 30, p.y + 10, (Math.random() - 0.5) * 0.3, -0.8 - Math.random(), 700, 3, color, -0.0005);
+    const at = this.low(p);
+    const ox = Math.round((Math.random() - 0.5) * 10);
+    this.add(500, (c, f) => {
+      const y = at.y - 4 - f * 2;
+      star(c, at.x + ox, y, f % 2 === 0 ? 2 : 1, color);
+    });
+  }
+
+  /**
+   * One shared spell: sparks stream from every caster into a single energy ball, which is shot
+   * at the boss and bursts in its element on impact. A fizzled spell's ball sputters and drops.
+   */
+  cast(casters: Pt[], target: Pt, element: Element, tier: Tier): void {
+    const pal = PALETTE[element];
+    const T = this.low(target);
+    const C = casters.map((p) => this.low(p));
+    const u = Math.max(1, this.w / 260);
+    const cx = C.reduce((s, p) => s + p.x, 0) / Math.max(1, C.length);
+    const G = { x: Math.round(cx - 14 * u), y: Math.round(Math.min(...C.map((p) => p.y), T.y + 20 * u) - 24 * u) };
+    const R = (tier === 'perfect' ? 8 : tier === 'strong' ? 5.5 : tier === 'weak' ? 3.5 : 2.5) * u;
+
+    // 1. gather: sparks fly from each caster into the ball, which grows
+    this.add(CHANT_MS, (c, f, t) => {
+      const p = t / CHANT_MS;
+      for (const [ci, from] of C.entries()) {
+        for (let i = 0; i < 3; i++) {
+          const k = ((f + i * 2 + ci) % 6) / 6;
+          const x = from.x + (G.x - from.x) * k;
+          const y = from.y + (G.y - from.y) * k - Math.sin(k * Math.PI) * 6 * u;
+          star(c, x, y, (f + i) % 2 ? 2 : 1, pal[1]);
+        }
+      }
+      orb(c, G.x, G.y, Math.max(1, R * p), pal, f, tier === 'fizzle');
+    });
+
+    if (tier === 'fizzle') {
+      this.fizzle(G, R, pal);
+      return;
     }
-    this.loop();
-  }
 
-  private emit(x: number, y: number, vx: number, vy: number, max: number, size: number, color: string, gravity = 0): void {
-    this.particles.push({ x, y, vx, vy, life: 0, max, size, color, gravity });
-  }
+    // 2. shoot: the ball flies to the target in stepped frames, leaving a trail
+    const flight = IMPACT_MS - CHANT_MS;
+    this.add(
+      flight,
+      (c, f, t) => {
+        const steps = Math.ceil(flight / FRAME_MS);
+        for (let back = 4; back >= 0; back--) {
+          const k = Math.max(0, Math.min(1, (f - back) / steps));
+          const x = G.x + (T.x - G.x) * k;
+          const y = G.y + (T.y - G.y) * k - Math.sin(k * Math.PI) * 10 * u;
+          if (back === 0) orb(c, x, y, R, pal, f, false);
+          else star(c, x, y, Math.max(1, Math.round(R / 2) - back + 2), back > 2 ? pal[3] : pal[2], pal[1]);
+        }
+        if (tier === 'perfect') for (let i = 0; i < 3; i++) star(c, G.x + (T.x - G.x) * (t / flight) + (i - 1) * 6, G.y + (T.y - G.y) * (t / flight) - 8, 1, '#ffffff');
+      },
+      CHANT_MS,
+    );
 
-  private burst(p: Pt, n: number, speed: number, colors: string[], size: number, max: number, gravity = 0.004): void {
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const v = speed * (0.3 + Math.random());
-      this.emit(p.x, p.y, Math.cos(a) * v, Math.sin(a) * v, max * (0.6 + Math.random() * 0.6), size, colors[i % colors.length], gravity);
+    // 3. impact: element burst at the target
+    const k = tier === 'perfect' ? 1.45 : tier === 'strong' ? 1 : 0.6;
+    const n = tier === 'perfect' ? 5 : tier === 'strong' ? 3 : 1;
+    const draw = {
+      fire: () => this.fire(T, pal, k, n, u, 0),
+      ice: () => this.ice(T, pal, k, n, u, 0),
+      thunder: () => this.thunder(T, pal, k, n, u, 0),
+      wind: () => this.wind(T, pal, k, u),
+      light: () => this.light(T, pal, k, n, u, 0),
+      shadow: () => this.shadow(T, pal, k, n, u, 0),
+    }[element]();
+    this.add(1300, draw, IMPACT_MS);
+
+    // radiating hit stars, plus flashes and a star burst for perfect
+    this.add(
+      500,
+      (c, f) => {
+        const count = tier === 'perfect' ? 10 : tier === 'strong' ? 6 : 3;
+        for (let i = 0; i < count; i++) {
+          const a = (i / count) * Math.PI * 2 + 0.3;
+          const d = (6 + f * 5) * u * k;
+          star(c, T.x + Math.cos(a) * d, T.y + Math.sin(a) * d * 0.7, f < 3 ? 3 : 1, pal[1]);
+        }
+      },
+      IMPACT_MS,
+    );
+    if (tier !== 'weak') this.flash(IMPACT_MS, pal[0]);
+    if (tier === 'perfect') {
+      this.flash(IMPACT_MS + FRAME_MS * 2, '#ffffff');
+      this.flash(IMPACT_MS + FRAME_MS * 4, pal[1]);
+      this.add(
+        900,
+        (c, f) => {
+          const r = (f + 1) * 6 * u;
+          ring(c, T.x, T.y, r, f % 2 ? '#ffffff' : pal[1]);
+          ring(c, T.x, T.y, r * 0.6, pal[0]);
+          star(c, T.x, T.y, Math.max(2, 10 * u - f), '#ffffff', pal[0]);
+        },
+        IMPACT_MS,
+      );
     }
   }
 
-  private loop = (): void => {
+  // ── element effects (each returns a draw fn; t is ms since the effect started) ──
+
+  private fire(T: Pt, pal: string[], k: number, n: number, u: number, impact: number): Effect['draw'] {
+    return (c, f, t) => {
+      const grow = Math.min(1, t / impact);
+      const fade = t > 1500 ? 1 - (t - 1500) / 400 : 1;
+      const base = T.y + 16 * u;
+      for (let i = 0; i < n; i++) {
+        const x = T.x + (n === 1 ? 0 : (i / (n - 1) - 0.5) * 44 * u * k);
+        const h = Math.max(2, (t < impact ? 8 * grow : 26) * u * k * fade * (i % 2 ? 0.8 : 1));
+        flame(c, x, base, h, 5 * u * k * Math.max(0.4, fade), pal, f * 7 + i * 13);
+      }
+      if (t >= impact && t < impact + 3 * FRAME_MS) {
+        disc(c, T.x, T.y, (6 + (t - impact) / 25) * u * k, pal[0]);
+        ring(c, T.x, T.y, (10 + (t - impact) / 20) * u * k, pal[2]);
+      }
+    };
+  }
+
+  private ice(T: Pt, pal: string[], k: number, n: number, u: number, impact: number): Effect['draw'] {
+    const count = n + 3;
+    return (c, f, t) => {
+      if (t < impact) {
+        const shown = Math.ceil((t / impact) * count);
+        for (let i = 0; i < shown; i++) {
+          const a = (i / count) * Math.PI * 2;
+          diamond(c, T.x + Math.cos(a) * 16 * u * k, T.y + Math.sin(a) * 10 * u * k, Math.min(6, 2 + (f - i)) * u * k * 0.8, pal);
+        }
+        if (k > 1.2) diamond(c, T.x, T.y, ((t / impact) * 18 * u) | 0, pal);
+      } else {
+        // shatter: shards fly out and fall
+        const s = (t - impact) / FRAME_MS;
+        const r = rng(7);
+        for (let i = 0; i < count * 3; i++) {
+          const a = r() * Math.PI * 2;
+          const v = (2 + r() * 3) * u * k;
+          const x = T.x + Math.cos(a) * v * s;
+          const y = T.y + Math.sin(a) * v * s + 0.4 * s * s;
+          diamond(c, x, y, s < 6 ? 2 : 1, pal);
+        }
+      }
+    };
+  }
+
+  private thunder(T: Pt, pal: string[], k: number, n: number, u: number, impact: number): Effect['draw'] {
+    return (c, f, t) => {
+      if (t < impact) {
+        // crackle around the target
+        const r = rng(f);
+        for (let i = 0; i < 4; i++) px(c, T.x + (r() - 0.5) * 30 * u, T.y + (r() - 0.5) * 20 * u, pal[1]);
+        return;
+      }
+      const s = Math.floor((t - impact) / FRAME_MS);
+      if (s > 9 || s % 2 === 1) return; // flicker on/off
+      for (let i = 0; i < n; i++) {
+        const x = T.x + (n === 1 ? 0 : (i / (n - 1) - 0.5) * 36 * u * k);
+        bolt(c, x + (i - n / 2) * 4, 0, T.x + (i - n / 2) * 3 * u, T.y, pal, f * 3 + i);
+      }
+      disc(c, T.x, T.y, 5 * u * k, pal[0]);
+    };
+  }
+
+  private wind(T: Pt, pal: string[], k: number, u: number): Effect['draw'] {
+    return (c, f, t) => {
+      const life = Math.min(1, t / 250) * (t > 1000 ? Math.max(0, 1 - (t - 1000) / 300) : 1);
+      const H = 46 * u * k * life;
+      const bottom = T.y + 20 * u;
+      for (let row = 0; row < H; row++) {
+        const rr = (3 + (row / Math.max(1, H)) * 18) * u * k;
+        const y = bottom - row;
+        for (let d = 0; d < 5; d++) {
+          const a = f * 1.1 + row * 0.22 + (d * Math.PI * 2) / 5;
+          const front = Math.sin(a) > 0;
+          const x = T.x + Math.cos(a) * rr;
+          box(c, x, y, 3, 1, front ? (d % 2 ? pal[0] : pal[1]) : pal[3]);
+        }
+      }
+      // leaves caught in the wind
+      for (let i = 0; i < 8; i++) {
+        const a = f * 0.8 + i * 0.8;
+        const y = bottom - ((f * 4 + i * 11) % Math.max(1, H));
+        box(c, T.x + Math.cos(a) * 20 * u * k, y, 2, 2, i % 2 ? pal[2] : '#e8c040');
+      }
+    };
+  }
+
+  private light(T: Pt, pal: string[], k: number, n: number, u: number, impact: number): Effect['draw'] {
+    return (c, f, t) => {
+      const drop = Math.min(1, (t - impact + 300) / 300);
+      if (drop <= 0) return;
+      const fade = t > 1500 ? 1 - (t - 1500) / 400 : 1;
+      for (let i = 0; i < n; i++) {
+        const x = T.x + (n === 1 ? 0 : (i / (n - 1) - 0.5) * 40 * u * k);
+        const w = Math.max(1, Math.round(4 * u * k * fade));
+        const bottom = T.y + 14 * u;
+        const top = bottom - (bottom + 4) * drop;
+        box(c, x - w - 1, top, w * 2 + 3, bottom - top, pal[2]);
+        box(c, x - w, top, w * 2 + 1, bottom - top, pal[1]);
+        box(c, x - Math.floor(w / 2), top, w + 1, bottom - top, pal[0]);
+      }
+      const r = rng(f);
+      for (let i = 0; i < 5; i++) star(c, T.x + (r() - 0.5) * 50 * u, T.y + (r() - 0.5) * 30 * u, 2, pal[2]);
+    };
+  }
+
+  private shadow(T: Pt, pal: string[], k: number, n: number, u: number, impact: number): Effect['draw'] {
+    const orbs = n + 2;
+    return (c, f, t) => {
+      if (t < impact) {
+        const p = t / impact;
+        for (let i = 0; i < orbs; i++) {
+          const a = (i / orbs) * Math.PI * 2 + p * 4;
+          const d = (1 - p) * 34 * u;
+          const x = T.x + Math.cos(a) * d;
+          const y = T.y + Math.sin(a) * d * 0.7;
+          disc(c, x, y, 3 * u * k, pal[2]);
+          disc(c, x, y, 1.5 * u * k, pal[3]);
+          px(c, x - 1, y - 1, pal[0]);
+        }
+      } else {
+        const s = (t - impact) / FRAME_MS;
+        if (s < 8) {
+          disc(c, T.x, T.y, (4 + s * 3) * u * k, s % 2 ? pal[3] : pal[2]);
+          ring(c, T.x, T.y, (6 + s * 4) * u * k, pal[1]);
+          ring(c, T.x, T.y, (8 + s * 5) * u * k, pal[0]);
+        }
+      }
+    };
+  }
+
+  private fizzle(G: Pt, R: number, pal: string[]): void {
+    const smoke = ['#bbbbbb', '#888888', '#555555'];
+    const ground = G.y + 34;
+    this.add(
+      1800,
+      (c, f) => {
+        if (f < 5) {
+          // the ball wobbles and flickers grey
+          orb(c, G.x + (f % 2 ? 1 : -1), G.y, Math.max(1, R - f * 0.3), f % 2 ? pal : ['#dddddd', '#999999', '#666666', '#333333'], f, true);
+        } else if (f < 10) {
+          // drops to the ground
+          const s = f - 5;
+          orb(c, G.x, Math.min(ground, G.y + s * s * 1.6), Math.max(1, R * 0.6), ['#cccccc', '#999999', '#666666', '#333333'], f, true);
+        } else {
+          const s = f - 10;
+          for (let i = 0; i < 4; i++) {
+            const a = i * 1.6;
+            disc(c, G.x + Math.cos(a) * (2 + s), ground - s * 1.2 + Math.sin(a) * 2, Math.max(1, 3 - s / 4), smoke[Math.min(2, Math.floor(s / 4))]);
+          }
+        }
+      },
+      CHANT_MS,
+    );
+  }
+
+  // ── loop ──
+
+  private loop(): void {
     if (this.raf) return;
-    let last = performance.now();
-    const frame = (now: number) => {
-      const dt = Math.min(50, now - last);
-      last = now;
-      this.update(now, dt);
-      this.draw(now);
-      if (this.particles.length || this.spells.length || this.rings.length || now < this.flashUntil) {
-        this.raf = requestAnimationFrame(frame);
+    const tick = (now: number) => {
+      const frame = Math.floor(now / FRAME_MS);
+      if (frame !== this.lastFrame) {
+        this.lastFrame = frame;
+        this.render(now);
+      }
+      if (this.effects.length || this.flashes.length) {
+        this.raf = requestAnimationFrame(tick);
       } else {
         this.raf = 0;
         this.ctx.clearRect(0, 0, this.w, this.h);
       }
     };
-    this.raf = requestAnimationFrame(frame);
-  };
-
-  private update(now: number, dt: number): void {
-    for (const s of this.spells) {
-      const t = now - s.start;
-      // Charge: streams of orbs from each caster towards the gather point.
-      if (t < CHARGE_MS) {
-        for (const c of s.casters) {
-          const k = Math.random();
-          const x = c.x + (s.gather.x - c.x) * k;
-          const y = c.y + (s.gather.y - c.y) * k;
-          this.emit(x, y, (s.gather.x - c.x) * 0.002, (s.gather.y - c.y) * 0.002, 400, 4, s.color);
-        }
-      } else if (t < IMPACT_MS) {
-        const k = (t - CHARGE_MS) / (IMPACT_MS - CHARGE_MS);
-        if (s.tier === 'fizzle') {
-          // Orb wobbles, sputters and drops.
-          const x = s.gather.x + Math.sin(t / 30) * 6 * k;
-          const y = s.gather.y + k * k * 60;
-          this.emit(x, y, (Math.random() - 0.5) * 0.2, -0.05, 300, 4 * (1 - k) + 2, k > 0.5 ? '#777' : s.color);
-        } else {
-          const ease = k * k;
-          const x = s.gather.x + (s.target.x - s.gather.x) * ease;
-          const y = s.gather.y + (s.target.y - s.gather.y) * ease;
-          const size = s.tier === 'perfect' ? 10 : s.tier === 'strong' ? 7 : 4;
-          for (let i = 0; i < (s.tier === 'weak' ? 1 : 3); i++) {
-            this.emit(x + (Math.random() - 0.5) * size, y + (Math.random() - 0.5) * size, 0, 0, 350, size, s.color);
-          }
-          if (s.tier === 'perfect') this.emit(x, y, 0, 0, 500, 6, `hsl(${(t / 2) % 360} 100% 70%)`);
-        }
-      } else if (!s.impacted) {
-        s.impacted = true;
-        this.impact(s, now);
-      }
-    }
-    this.spells = this.spells.filter((s) => now - s.start < IMPACT_MS + 100);
-
-    for (const p of this.particles) {
-      p.life += dt;
-      p.vy += p.gravity * dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-    }
-    this.particles = this.particles.filter((p) => p.life < p.max);
-    this.rings = this.rings.filter((r) => now - r.born < 700);
+    this.raf = requestAnimationFrame(tick);
   }
 
-  private impact(s: Spell, now: number): void {
-    const { target, color } = s;
-    switch (s.tier) {
-      case 'perfect': {
-        const rainbow = ['#ff4a5a', '#ffb84a', '#ffe84a', '#6aff9a', '#6ad8ff', '#c07aff', '#ffffff'];
-        this.burst(target, 260, 0.55, rainbow, 6, 1600, 0.0006);
-        this.burst(target, 80, 0.25, ['#fff'], 4, 1200, 0);
-        for (let i = 0; i < 4; i++) this.rings.push({ ...target, r: 0, max: 120 + i * 70, color: rainbow[i * 2], born: now + i * 90 });
-        this.flashUntil = now + 260;
-        this.flashColor = '#ffffff';
-        // Lingering light pillars.
-        for (let i = 0; i < 40; i++) {
-          this.emit(target.x + (Math.random() - 0.5) * 140, target.y + 60, 0, -0.25 - Math.random() * 0.3, 1400, 5, rainbow[i % 7], 0);
-        }
-        break;
-      }
-      case 'strong':
-        this.burst(target, 110, 0.38, [color, '#ffffff', color], 5, 1000);
-        this.rings.push({ ...target, r: 0, max: 130, color, born: now });
-        this.flashUntil = now + 120;
-        this.flashColor = color;
-        break;
-      case 'weak':
-        this.burst(target, 26, 0.18, [color, '#ffffff'], 3, 600);
-        this.rings.push({ ...target, r: 0, max: 50, color, born: now });
-        break;
-      case 'fizzle': {
-        const at = { x: s.gather.x, y: s.gather.y + 60 };
-        this.burst(at, 30, 0.07, ['#888', '#666', '#aaa'], 6, 1200, -0.0003);
-        break;
+  private render(now: number): void {
+    const c = this.ctx;
+    c.clearRect(0, 0, this.w, this.h);
+    this.effects = this.effects.filter((e) => now < e.start + e.dur);
+    for (const e of this.effects) {
+      const t = now - e.start;
+      if (t < 0) continue;
+      e.draw(c, Math.floor(t / FRAME_MS), t);
+    }
+    // palette flashes last exactly one frame each
+    this.flashes = this.flashes.filter((fl) => now < fl.at + FRAME_MS * 1.5);
+    for (const fl of this.flashes) {
+      if (now >= fl.at) {
+        c.globalAlpha = 0.45;
+        box(c, 0, 0, this.w, this.h, fl.col);
+        c.globalAlpha = 1;
       }
     }
-  }
-
-  private draw(now: number): void {
-    const ctx = this.ctx;
-    ctx.clearRect(0, 0, this.w, this.h);
-    ctx.globalCompositeOperation = 'lighter';
-
-    // Perfect spells get a beam during the travel phase.
-    for (const s of this.spells) {
-      const t = now - s.start;
-      if (s.tier === 'perfect' && t > CHARGE_MS + 200 && t < IMPACT_MS + 80) {
-        const k = (t - CHARGE_MS - 200) / (IMPACT_MS - CHARGE_MS - 200);
-        ctx.strokeStyle = `hsl(${(t / 3) % 360} 100% 70%)`;
-        ctx.lineWidth = 6 + k * 18;
-        ctx.globalAlpha = 0.7;
-        ctx.beginPath();
-        ctx.moveTo(s.gather.x, s.gather.y);
-        ctx.lineTo(s.target.x, s.target.y);
-        ctx.stroke();
-        ctx.lineWidth = 3 + k * 6;
-        ctx.strokeStyle = '#fff';
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      }
-    }
-
-    for (const p of this.particles) {
-      const a = 1 - p.life / p.max;
-      ctx.globalAlpha = a;
-      ctx.fillStyle = p.color;
-      const s = Math.max(1, Math.round(p.size * (0.5 + a / 2)));
-      ctx.fillRect(Math.round(p.x - s / 2), Math.round(p.y - s / 2), s, s);
-    }
-
-    for (const r of this.rings) {
-      const k = (now - r.born) / 700;
-      if (k < 0) continue;
-      ctx.globalAlpha = 1 - k;
-      ctx.strokeStyle = r.color;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(r.x, r.y, r.max * k, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    ctx.globalCompositeOperation = 'source-over';
-    if (now < this.flashUntil) {
-      ctx.globalAlpha = 0.55;
-      ctx.fillStyle = this.flashColor;
-      ctx.fillRect(0, 0, this.w, this.h);
-    }
-    ctx.globalAlpha = 1;
   }
 }

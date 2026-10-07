@@ -133,7 +133,7 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
         .map((id) => centerOf(stage?.querySelector(`[data-pid="${CSS.escape(id)}"] .fighter-sprite`) ?? null))
         .filter((p): p is { x: number; y: number } => !!p);
       const target = centerOf(bossRef.current);
-      if (target) fx.current?.cast(casters, target, ELEMENT_COLOR[chain.element], chain.tier);
+      if (target) fx.current?.cast(casters, target, chain.element, chain.tier);
     });
     after(spellAt + IMPACT_MS, () => {
       setTierBanner({ id: ++floatSeq, tier: chain.tier });

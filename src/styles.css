@@ -1267,6 +1267,7 @@ details.hint summary {
   height: 100%;
   pointer-events: none;
   z-index: 4;
+  image-rendering: pixelated;
 }
 
 .dmg-float {
