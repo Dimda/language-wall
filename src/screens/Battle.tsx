@@ -4,6 +4,7 @@ import { audio } from '../audio';
 import { BattleLog } from '../components/BattleLog';
 import { Boss } from '../components/Boss';
 import { Fighter, type FighterRole } from '../components/Fighter';
+import { KansaiBackdrop } from '../components/KansaiBackdrop';
 import { ResolveWindow, stageAt, TIER_LABEL } from '../components/ResolveWindow';
 import { ELEMENT_COLOR, ELEMENT_LABEL } from '../components/sprites';
 import { TaskPanel } from '../components/TaskPanel';
@@ -186,6 +187,7 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
         </div>
 
         <div ref={stageRef} className="stage">
+          <KansaiBackdrop />
           <div ref={bossRef} className="boss-area">
             <Boss hpPct={bossPct} hitKey={bossHit} />
             {floats.map((f) => (

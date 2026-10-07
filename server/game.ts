@@ -188,7 +188,7 @@ export class Game {
     this.players.set(id, {
       id,
       name,
-      avatar: AVATAR_IDS[(n + 4) % AVATAR_IDS.length],
+      avatar: AVATAR_IDS[(n + 1) % AVATAR_IDS.length],
       connected: true,
       isBot: true,
       joinedAt: this.joinSeq++,

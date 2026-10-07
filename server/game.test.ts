@@ -35,8 +35,8 @@ function setup(timing: Partial<typeof FAST> = {}) {
 describe('rounds', () => {
   it('pairs two players into one 2-hop chain that alternates languages and ends in the source language', async () => {
     const { game, tasks, resolves, last } = setup();
-    game.join('a', 'Aiko', 'samurai');
-    game.join('b', 'Sam', 'mage');
+    game.join('a', 'Aiko', 'obachan');
+    game.join('b', 'Sam', 'gaijin');
     game.start('a', 2);
 
     const chain = last().chains[0];
@@ -66,7 +66,7 @@ describe('rounds', () => {
   it('fizzles the chain when the current caster disconnects', async () => {
     const { game, tasks, resolves, last } = setup();
     game.join('a', 'A', 'ninja');
-    game.join('b', 'B', 'robot');
+    game.join('b', 'B', 'torafan');
     game.start('a', 2);
     const caster = last().chains[0].order[0];
     expect(tasks.get(caster)).toBeTruthy();
@@ -78,14 +78,14 @@ describe('rounds', () => {
 
   it('fizzles on hop timeout', async () => {
     const { game, last } = setup({ hopMs: 20 });
-    game.join('a', 'A', 'miko');
+    game.join('a', 'A', 'maiko');
     game.start('a', 2);
     await expect.poll(() => last().chains[0]?.status ?? last().turn).not.toBe('casting');
   });
 
   it('a solo player casts both hops', () => {
     const { game, tasks, last } = setup();
-    game.join('a', 'A', 'kitsune');
+    game.join('a', 'A', 'shika');
     game.start('a', 2);
     expect(last().chains[0].order).toEqual(['a', 'a']);
     game.submit('a', tasks.get('a')!.chainId, 'x');

@@ -7,7 +7,8 @@ import { socket } from '../net';
 function load(): { name: string; avatar: AvatarId } {
   try {
     const saved = JSON.parse(localStorage.getItem('lw-profile') ?? '');
-    return { name: String(saved.name ?? ''), avatar: saved.avatar ?? 'samurai' };
+    const avatar = AVATARS.some((a) => a.id === saved.avatar) ? saved.avatar : AVATARS[0].id;
+    return { name: String(saved.name ?? ''), avatar };
   } catch {
     return { name: '', avatar: AVATARS[Math.floor(Math.random() * AVATARS.length)].id };
   }

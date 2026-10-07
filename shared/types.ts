@@ -7,7 +7,20 @@ export type Phase = 'lobby' | 'battle' | 'victory' | 'defeat';
 /** Sub-state of a battle: party casts → spells resolve one by one → boss strikes back → short pause. */
 export type Turn = 'casting' | 'resolving' | 'boss' | 'intermission';
 
-export const AVATAR_IDS = ['samurai', 'mage', 'ninja', 'kitsune', 'robot', 'miko'] as const;
+export const AVATAR_IDS = [
+  'obachan',
+  'gaijin',
+  'maiko',
+  'tourist',
+  'torafan',
+  'eikaiwa',
+  'tsukkomi',
+  'otaku',
+  'takoyaki',
+  'yukata',
+  'shika',
+  'ninja',
+] as const;
 export type AvatarId = (typeof AVATAR_IDS)[number];
 
 export const ELEMENTS = ['fire', 'ice', 'thunder', 'wind', 'light', 'shadow'] as const;
