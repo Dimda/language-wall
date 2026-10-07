@@ -36,7 +36,7 @@ export function HpBar({ label, hp, max, variant }: { label: string; hp: number; 
   const pct = max > 0 ? Math.max(0, Math.min(100, (hp / max) * 100)) : 0;
   const level = pct > 50 ? 'ok' : pct > 20 ? 'mid' : 'low';
   return (
-    <div className={`hpbar ${variant}`}>
+    <div className={`hpbar hpbar-${variant}`}>
       <div className="hpbar-label">
         <span>{label}</span>
         <span>

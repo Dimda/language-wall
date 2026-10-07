@@ -315,19 +315,19 @@ textarea {
   transition: width 0.25s steps(5);
 }
 
-.hpbar.boss .hpbar-fill {
+.hpbar-boss .hpbar-fill {
   background: linear-gradient(180deg, #ff7a6a 0 40%, #c8203a 40%);
 }
 
-.hpbar.party .hpbar-fill.ok {
+.hpbar-party .hpbar-fill.ok {
   background: linear-gradient(180deg, #8affb0 0 40%, #20b050 40%);
 }
 
-.hpbar.party .hpbar-fill.mid {
+.hpbar-party .hpbar-fill.mid {
   background: linear-gradient(180deg, #ffe88a 0 40%, #d0a020 40%);
 }
 
-.hpbar.party .hpbar-fill.low {
+.hpbar-party .hpbar-fill.low {
   background: linear-gradient(180deg, #ff8a8a 0 40%, #d02020 40%);
 }
 
@@ -1655,9 +1655,13 @@ details.hint summary {
   will-change: transform;
 }
 
+/* Scenery slides right: the party (facing left) advances on the wall. */
 @keyframes bd-scroll {
-  to {
+  from {
     transform: translateX(-800px);
+  }
+  to {
+    transform: translateX(0);
   }
 }
 
