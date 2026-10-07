@@ -40,6 +40,7 @@ const BRICKS = (() => {
       // Trim half-bricks at the row ends to the wall, so no clip mask is needed when they fly.
       const left = Math.max(x, 0);
       const w = Math.min(x + BW, W) - left;
+      if (w < 6) continue;
       out.push({ x: left, y, w, shade: Math.floor(r() * 5), chip: r(), fly });
     }
   }

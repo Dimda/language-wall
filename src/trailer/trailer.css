@@ -1,0 +1,436 @@
+/* ── trailer (?trailer) ─────────────────── */
+
+.trailer-root {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+.trailer-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1280px;
+  height: 720px;
+  margin: -360px 0 0 -640px;
+  background: #06030a;
+  overflow: hidden;
+}
+
+.tr-frame-inner {
+  position: absolute;
+  inset: 0;
+}
+
+.tr-start {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 360px;
+  height: 120px;
+  background: #000;
+  color: var(--gold);
+  border: 3px solid var(--gold);
+  border-radius: 6px;
+  font-size: 32px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.tr-start small {
+  font-size: 15px;
+  color: var(--dim);
+}
+
+.tr-start.replay {
+  z-index: 50;
+  height: 80px;
+  font-size: 24px;
+}
+
+.tr-scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.6s steps(6);
+  pointer-events: none;
+}
+
+.tr-scene.show {
+  opacity: 1;
+}
+
+.tr-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: #000;
+}
+
+.tr-line {
+  margin: 0;
+  font-size: 34px;
+  color: var(--text);
+  text-shadow: 3px 3px 0 #300;
+}
+
+.tr-line.big {
+  font-size: 96px;
+  color: var(--gold);
+  text-shadow: 6px 6px 0 #8a2a1a;
+}
+
+.tr-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.tr-stage .backdrop {
+  filter: brightness(0.85);
+}
+
+.tr-boss-rise {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  width: 760px;
+  margin-left: -380px;
+  animation: boss-rise 1.6s steps(12) both;
+}
+
+@keyframes boss-rise {
+  0% {
+    transform: translateY(420px);
+  }
+  60% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.tr-boss-rise .boss {
+  width: 100%;
+}
+
+.tr-boss-rise .boss-svg,
+.tr-fight-boss .boss-svg {
+  filter: drop-shadow(0 0 14px rgba(255, 40, 20, 0.6)) drop-shadow(8px 8px 0 #000);
+}
+
+.tr-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46%;
+  margin: 0;
+  padding: 8px 0;
+  background: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  font-size: 36px;
+  color: var(--text);
+  text-shadow:
+    3px 3px 0 #000,
+    -2px -2px 0 #000;
+  animation: pop 0.4s steps(4);
+}
+
+.tr-caption.top {
+  top: 36px;
+  font-size: 30px;
+  color: var(--gold);
+}
+
+.tr-caption.bottom {
+  top: auto;
+  bottom: 40px;
+  font-size: 24px;
+  color: var(--dim);
+}
+
+.tr-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: title-slam 0.5s steps(5);
+}
+
+.tr-title b,
+.tr-logo b {
+  font-weight: normal;
+  font-size: 120px;
+  line-height: 1;
+  color: #ff3a1a;
+  letter-spacing: 0.1em;
+  text-shadow:
+    6px 6px 0 #000,
+    0 0 24px #ff2a00;
+}
+
+.tr-title small,
+.tr-logo small {
+  font-size: 28px;
+  letter-spacing: 0.5em;
+  color: var(--text);
+  text-shadow: 3px 3px 0 #000;
+}
+
+@keyframes title-slam {
+  0% {
+    transform: scale(3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.tr-heroes {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 3, 10, 0.72);
+}
+
+.tr-hero-grid {
+  position: absolute;
+  left: 60px;
+  right: 60px;
+  top: 120px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 24px 10px;
+}
+
+.tr-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  animation: hero-pop 0.4s steps(4);
+}
+
+.tr-hero span {
+  font-size: 16px;
+  color: var(--gold);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.tr-hero small {
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.tr-hero.placeholder {
+  height: 160px;
+}
+
+@keyframes hero-pop {
+  0% {
+    transform: translateY(30px) scale(0.4);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(-8px) scale(1.1);
+    opacity: 1;
+  }
+}
+
+.tr-chain {
+  background: radial-gradient(ellipse at 50% 40%, #2a0a1e 0%, #06030a 70%);
+}
+
+.tr-journey {
+  position: absolute;
+  left: 140px;
+  right: 140px;
+  top: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 30px;
+  border-color: var(--gold);
+}
+
+.tr-hop {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  align-items: center;
+  animation: pop 0.3s steps(3);
+}
+
+.tr-hop .who {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--dim);
+  font-size: 18px;
+}
+
+.tr-hop .said {
+  font-size: 30px;
+}
+
+.tr-hop .said.term {
+  font-size: 48px;
+  color: var(--gold);
+}
+
+.tr-judge {
+  margin-top: 8px;
+  border-top: 2px dashed #5a5a8a;
+  padding-top: 12px;
+}
+
+.tr-judge .bar-row {
+  grid-template-columns: 140px 1fr 60px;
+  font-size: 16px;
+}
+
+.tr-judge .bar-track {
+  height: 12px;
+}
+
+.tr-judge .verdict {
+  font-size: 34px;
+  animation: pop 0.4s steps(4);
+}
+
+.tr-fight {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  align-items: end;
+  padding: 0 40px 70px;
+}
+
+.tr-fight-boss {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.tr-fight-boss .boss {
+  width: 640px;
+}
+
+.tr-fight-party {
+  display: flex;
+  justify-content: center;
+  gap: 26px;
+  padding-bottom: 10px;
+}
+
+.tr-fight .fighter-name {
+  font-size: 18px;
+}
+
+.tr-hp {
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  right: 40px;
+  z-index: 3;
+}
+
+.tr-finale {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  padding-top: 30px;
+  background: radial-gradient(ellipse at 50% 30%, #2a1a50 0%, #06030a 70%);
+}
+
+.tr-finale .bridge-scene {
+  width: 900px;
+  height: 200px;
+}
+
+.tr-finale .end-party {
+  gap: 10px;
+}
+
+.tr-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: title-slam 0.6s steps(6);
+}
+
+.tr-logo b {
+  font-size: 96px;
+  color: var(--gold);
+  text-shadow:
+    6px 6px 0 #8a2a1a,
+    10px 10px 0 #000;
+}
+
+.tr-logo span {
+  margin-top: 6px;
+  font-size: 24px;
+  color: var(--dim);
+}
+
+.tr-play {
+  position: absolute;
+  right: 40px;
+  bottom: 30px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  animation: pop 0.4s steps(4);
+}
+
+.tr-play img {
+  image-rendering: pixelated;
+  border: 4px solid var(--line);
+}
+
+.tr-play div {
+  display: flex;
+  flex-direction: column;
+}
+
+.tr-play b {
+  font-weight: normal;
+  font-size: 22px;
+  color: var(--gold);
+}
+
+.tr-play span {
+  font-size: 18px;
+}
+
+.tr-fade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  transition: opacity 1s steps(8);
+  pointer-events: none;
+  z-index: 40;
+}
+
+.tr-fade.show {
+  opacity: 1;
+}
