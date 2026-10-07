@@ -368,124 +368,228 @@ textarea {
 }
 
 .wall-outline {
-  fill: #1a0a08;
+  fill: #050204;
+}
+
+.mortar {
+  fill: #ff3a10;
+  animation: magma 2.6s ease-in-out infinite;
+}
+
+@keyframes magma {
+  50% {
+    fill: #9a1008;
+  }
+}
+
+.mortar-chip {
+  fill: #ff6a20;
 }
 
 .brick.b0 {
-  fill: var(--brick-0);
+  fill: #2a2026;
 }
 .brick.b1 {
-  fill: var(--brick-1);
+  fill: #332830;
 }
 .brick.b2 {
-  fill: var(--brick-2);
+  fill: #221a20;
 }
 .brick.b3 {
-  fill: var(--brick-3);
+  fill: #3a2c30;
 }
 .brick.b4 {
-  fill: var(--brick-4);
+  fill: #1c1418;
 }
 
-.eye {
-  fill: #ffe040;
-  filter: drop-shadow(0 0 3px #ff3a1a) drop-shadow(0 0 6px #ff3a1a);
+.brick-top {
+  fill: #ffffff;
+  opacity: 0.06;
 }
 
-.pupil {
-  fill: #1a0005;
+.aura {
+  animation: aura 3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes aura {
+  50% {
+    opacity: 0.6;
+    transform: scale(1.06);
+  }
 }
 
 .brow {
-  fill: #1a0a08;
+  fill: #0a0406;
+}
+
+.pupil {
+  fill: #120002;
 }
 
 .eyes {
-  animation: glare 4.2s steps(1) infinite;
+  animation: glare 5s steps(1) infinite;
   transform-box: fill-box;
   transform-origin: center;
 }
 
 @keyframes glare {
-  92% {
+  94% {
     transform: scaleY(1);
   }
-  96% {
-    transform: scaleY(0.15);
+  97% {
+    transform: scaleY(0.1);
   }
 }
 
-.enraged .eye {
-  fill: #ff4020;
-  animation: blink 0.4s steps(2) infinite;
+.enraged .eyes {
+  animation: rage 0.5s steps(2) infinite;
 }
 
-/* dragon parts */
+@keyframes rage {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.small-eye {
+  animation: peek 6s steps(3) infinite;
+  transform: scaleY(0);
+}
+
+@keyframes peek {
+  0%,
+  60%,
+  100% {
+    transform: scaleY(0);
+  }
+  66%,
+  88% {
+    transform: scaleY(1);
+  }
+}
+
+.small-eye-white {
+  fill: #ff5a20;
+  filter: drop-shadow(0 0 2px #ff2a00);
+}
+
+.small-eye-pupil {
+  fill: #000;
+}
+
+.enraged .small-eye {
+  animation-duration: 2.5s;
+}
+
+/* torn dragon wings */
 
 .wing-membrane {
-  fill: #4a1238;
-  stroke: #12030c;
-  stroke-width: 3;
-  stroke-linejoin: round;
+  fill: url(#membrane);
+  stroke: #000;
+  stroke-width: 2.5;
+  stroke-linejoin: miter;
 }
 
-.wing-shade {
-  fill: #6a1a4a;
+.wing-vein {
+  fill: none;
+  stroke: #8a0a1a;
+  stroke-width: 1.2;
+  opacity: 0.8;
 }
 
 .wing-bone {
-  stroke: #20060f;
-  stroke-width: 4;
+  stroke: #050203;
+  stroke-width: 4.5;
+  stroke-linecap: round;
 }
 
-.wing-claw,
+.wing-claw {
+  fill: url(#bone);
+  stroke: #000;
+  stroke-width: 1.5;
+}
+
 .horn {
-  fill: #e8e0d0;
-  stroke: #12030c;
+  stroke: #000;
   stroke-width: 2;
 }
 
 .wing {
   transform-box: view-box;
   transform-origin: 0 20px;
-  animation: flap 1.6s steps(4) infinite;
+  animation: flap 2.4s ease-in-out infinite;
 }
 
 @keyframes flap {
   0%,
   100% {
-    transform: rotate(0deg) scaleX(1);
+    transform: rotate(4deg) scaleX(1);
   }
-  50% {
-    transform: rotate(-14deg) scaleX(0.82);
+  45% {
+    transform: rotate(-16deg) scaleX(0.78);
   }
 }
 
 .enraged .wing {
-  animation-duration: 0.7s;
+  animation-duration: 0.9s;
 }
+
+/* maw */
 
 .maw {
-  fill: #12030c;
+  stroke: #000;
+  stroke-width: 3;
+  stroke-linejoin: miter;
+  animation: breathe-maw 3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.maw-inner {
-  fill: #6a0a1a;
+@keyframes breathe-maw {
+  50% {
+    transform: scaleY(1.12);
+  }
 }
 
 .fang {
-  fill: #ffffff;
-  stroke: #12030c;
+  stroke: #1a0a04;
+  stroke-width: 1;
+}
+
+.drool {
+  stroke: #d8c8b8;
   stroke-width: 1.5;
+  opacity: 0.7;
+  animation: drool 3.2s ease-in infinite;
+}
+
+@keyframes drool {
+  0% {
+    transform: scaleY(0.1);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  80% {
+    transform: scaleY(1.6);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scaleY(1.8) translateY(6px);
+    opacity: 0;
+  }
 }
 
 .tongue {
-  animation: flick 2.8s steps(3) infinite;
+  animation: flick 3.4s steps(4) infinite;
 }
 
 .tongue-shape {
-  fill: #e0304a;
-  stroke: #12030c;
+  fill: #a01022;
+  stroke: #000;
   stroke-width: 2;
 }
 
@@ -499,15 +603,43 @@ textarea {
   54%,
   62%,
   70% {
-    transform: scaleY(1) rotate(-8deg);
+    transform: scaleY(1) rotate(-10deg);
   }
   50%,
   58%,
   66% {
-    transform: scaleY(1) rotate(8deg);
+    transform: scaleY(1) rotate(10deg);
   }
   76% {
     transform: scaleY(0.4);
+  }
+}
+
+.carved {
+  fill: #ff3a10;
+  font-family: 'DotGothic16', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  opacity: 0.85;
+}
+
+.ember {
+  fill: #ff6a20;
+  animation: ember 3.3s linear infinite;
+  opacity: 0;
+}
+
+@keyframes ember {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(10px, -70px);
+    opacity: 0;
   }
 }
 
@@ -525,8 +657,8 @@ textarea {
 
 .crack {
   fill: none;
-  stroke: #000;
-  stroke-width: 3;
+  stroke: #ffb040;
+  stroke-width: 2.5;
 }
 
 .boss.dead {
@@ -1005,7 +1137,7 @@ details.hint summary {
   box-shadow: 0 0 0 3px #000;
   background:
     linear-gradient(180deg, transparent 62%, rgba(40, 80, 40, 0.5) 62%),
-    radial-gradient(ellipse at 30% 40%, #2a1a50 0%, #0a0a20 70%);
+    radial-gradient(ellipse at 28% 42%, #3a0a14 0%, #10060e 55%, #06030a 100%);
   overflow: hidden;
 }
 
