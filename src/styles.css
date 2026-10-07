@@ -638,14 +638,148 @@ textarea {
   stroke-width: 2.5;
 }
 
-.boss.dead {
-  animation: crumble 1s steps(6) forwards;
+/* ── boss death: shudder, face flickers out, bricks blast apart, wings fall ── */
+
+.boss.dying {
+  animation: shudder 1.2s steps(12) both;
 }
 
-@keyframes crumble {
-  to {
-    transform: translateY(40px) scaleY(0.4);
+@keyframes shudder {
+  0%,
+  100% {
+    transform: none;
+  }
+  10%,
+  50%,
+  90% {
+    transform: translate(-5px, 2px);
+  }
+  30%,
+  70% {
+    transform: translate(5px, -2px);
+  }
+  20%,
+  60% {
+    transform: translate(3px, 3px);
+  }
+  40%,
+  80% {
+    transform: translate(-3px, -3px);
+  }
+}
+
+.dying .boss-face {
+  animation: face-out 1.25s steps(1) forwards;
+}
+
+@keyframes face-out {
+  0%,
+  25%,
+  45%,
+  60%,
+  72%,
+  84% {
+    opacity: 1;
+  }
+  15%,
+  35%,
+  52%,
+  66%,
+  78%,
+  90%,
+  100% {
+    opacity: 0.15;
+  }
+  100% {
     opacity: 0;
+  }
+}
+
+.dying .crack {
+  stroke: #fff6c0;
+  stroke-width: 4;
+}
+
+.dying .boss-backing,
+.dying .boss-aura {
+  animation: fade-out 0.3s steps(3) 1.2s forwards;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.dying .boss-limbs {
+  transform-box: view-box;
+  transform-origin: 50% 40%;
+  animation: limbs-fall 1.6s steps(12) 1.2s forwards;
+}
+
+@keyframes limbs-fall {
+  30% {
+    transform: translateY(-12px) scaleX(1.08);
+  }
+  100% {
+    transform: translateY(170px) scaleX(0.7) rotate(6deg);
+    opacity: 0;
+  }
+}
+
+.brick-piece {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: brick-fly 2.2s steps(18) var(--delay) forwards;
+}
+
+@keyframes brick-fly {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(calc(var(--dx) * 0.35), var(--up)) rotate(calc(var(--rot) * 0.25));
+  }
+  100% {
+    transform: translate(var(--dx), var(--fall)) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+.death-flash {
+  fill: #ffffff;
+  opacity: 0;
+  animation: death-flash 0.3s steps(3) 1.15s forwards;
+}
+
+@keyframes death-flash {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.dust {
+  fill: #8a7a70;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dust 1.8s steps(10) forwards;
+}
+
+@keyframes dust {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.2) translateY(-10px);
   }
 }
 

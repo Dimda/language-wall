@@ -20,13 +20,33 @@ function rng(seed: number) {
 
 const BRICKS = (() => {
   const r = rng(7);
-  const out: { x: number; y: number; shade: number; chip: number }[] = [];
+  const out: { x: number; y: number; w: number; shade: number; chip: number; fly: React.CSSProperties }[] = [];
   for (let row = 0; row < ROWS; row++) {
     const offset = row % 2 === 0 ? 0 : -BW / 2;
-    for (let c = 0; c < COLS + 1; c++) out.push({ x: offset + c * BW, y: row * BH, shade: Math.floor(r() * 5), chip: r() });
+    for (let c = 0; c < COLS + 1; c++) {
+      const x = offset + c * BW;
+      const y = row * BH;
+      // Explosion vector: away from the centre, up first, then down with gravity.
+      const cx = x + BW / 2 - W / 2;
+      const cy = y + BH / 2 - H / 2;
+      const dist = Math.hypot(cx, cy) / W;
+      const fly = {
+        '--dx': `${(cx * 1.1 + (r() - 0.5) * 70).toFixed(0)}px`,
+        '--up': `${(-20 - r() * 55 + cy * 0.4).toFixed(0)}px`,
+        '--fall': `${(170 + r() * 130).toFixed(0)}px`,
+        '--rot': `${((r() - 0.5) * 600).toFixed(0)}deg`,
+        '--delay': `${(1.2 + dist * 0.3 + r() * 0.12).toFixed(2)}s`,
+      } as React.CSSProperties;
+      // Trim half-bricks at the row ends to the wall, so no clip mask is needed when they fly.
+      const left = Math.max(x, 0);
+      const w = Math.min(x + BW, W) - left;
+      out.push({ x: left, y, w, shade: Math.floor(r() * 5), chip: r(), fly });
+    }
   }
   return out;
 })();
+
+const DUST = [-0.1, 0.1, 0.3, 0.5, 0.7, 0.9, 1.1].map((k, i) => ({ x: W * k, y: H - 4 + (i % 2) * 8, r: 16 + (i % 3) * 6, d: 1.3 + i * 0.05 }));
 
 // ── mouth: a jagged tear across the wall ──────────────
 
@@ -186,8 +206,10 @@ export const Boss = memo(function Boss({ hpPct, hitKey }: { hpPct: number; hitKe
   const tongueX = W / 2;
   const tongueY = MOUTH_BOT - 10;
 
+  const dying = hpPct <= 0;
+
   return (
-    <div className={`boss ${hpPct <= 0 ? 'dead' : ''} ${hpPct < 33 ? 'enraged' : ''}`}>
+    <div className={`boss ${dying ? 'dying' : ''} ${hpPct < 33 ? 'enraged' : ''}`}>
       <svg
         key={hitKey}
         className={hitKey ? 'boss-svg hit' : 'boss-svg'}
@@ -237,9 +259,6 @@ export const Boss = memo(function Boss({ hpPct, hitKey }: { hpPct: number; hitKe
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-          <clipPath id="wallclip">
-            <rect x="0" y="0" width={W} height={H} />
-          </clipPath>
           <mask id="wingHoles">
             <rect x="-200" y="-100" width="400" height="300" fill="#fff" />
             {WING_HOLES.map((p) => (
@@ -248,8 +267,11 @@ export const Boss = memo(function Boss({ hpPct, hitKey }: { hpPct: number; hitKe
           </mask>
         </defs>
 
-        <ellipse cx={W / 2} cy={H / 2} rx={W * 0.9} ry={H * 1.1} fill="url(#aura)" className="aura" />
+        <g className="boss-aura">
+          <ellipse cx={W / 2} cy={H / 2} rx={W * 0.9} ry={H * 1.1} fill="url(#aura)" className="aura" />
+        </g>
 
+        <g className="boss-limbs">
         <Wing side="left" />
         <Wing side="right" />
 
@@ -257,19 +279,24 @@ export const Boss = memo(function Boss({ hpPct, hitKey }: { hpPct: number; hitKe
         <path d={`M${W * 0.16},4 Q${W * 0.05},-30 ${W * 0.12},-66 Q${W * 0.14},-36 ${W * 0.27},2 Z`} fill="url(#horn)" className="horn" />
         <path d={`M${W * 0.84},4 Q${W * 0.95},-30 ${W * 0.88},-66 Q${W * 0.86},-36 ${W * 0.73},2 Z`} fill="url(#horn)" className="horn" />
 
+        </g>
+
         {/* molten mortar glowing through the bricks */}
-        <rect x="-4" y="-4" width={W + 8} height={H + 8} className="wall-outline" />
-        <rect x="0" y="0" width={W} height={H} className="mortar" filter="url(#glow)" />
-        <g clipPath="url(#wallclip)" shapeRendering="crispEdges">
+        <g className="boss-backing">
+          <rect x="-4" y="-4" width={W + 8} height={H + 8} className="wall-outline" />
+          <rect x="0" y="0" width={W} height={H} className="mortar" filter="url(#glow)" />
+        </g>
+        <g shapeRendering="crispEdges">
           {BRICKS.map((b) => (
-            <g key={`${b.x},${b.y}`}>
-              <rect x={b.x + 1.5} y={b.y + 1.5} width={BW - 3} height={BH - 3} className={`brick b${b.shade}`} />
-              <rect x={b.x + 1.5} y={b.y + 1.5} width={BW - 3} height="2" className="brick-top" />
-              {b.chip > 0.7 && <rect x={b.x + BW - 9} y={b.y + BH - 6} width="6" height="4" className="mortar-chip" />}
+            <g key={`${b.x},${b.y}`} className={dying ? 'brick-piece' : undefined} style={dying ? b.fly : undefined}>
+              <rect x={b.x + 1.5} y={b.y + 1.5} width={b.w - 3} height={BH - 3} className={`brick b${b.shade}`} />
+              <rect x={b.x + 1.5} y={b.y + 1.5} width={b.w - 3} height="2" className="brick-top" />
+              {b.chip > 0.7 && b.w > 12 && <rect x={b.x + b.w - 9} y={b.y + BH - 6} width="6" height="4" className="mortar-chip" />}
             </g>
           ))}
         </g>
 
+        <g className="boss-face">
         <rect x="0" y="0" width={W} height={H} fill="url(#shade)" />
 
         {/* eyes that open in the bricks */}
@@ -305,13 +332,24 @@ export const Boss = memo(function Boss({ hpPct, hitKey }: { hpPct: number; hitKe
         </text>
 
         {/* cracks */}
-        {hpPct < 66 && (
+        {(hpPct < 66 || dying) && (
           <polyline className="crack" filter="url(#glow)" points={`${W * 0.06},0 ${W * 0.12},${H * 0.2} ${W * 0.05},${H * 0.38} ${W * 0.14},${H * 0.6}`} />
         )}
-        {hpPct < 33 && (
+        {(hpPct < 33 || dying) && (
           <>
             <polyline className="crack" filter="url(#glow)" points={`${W * 0.94},${H} ${W * 0.86},${H * 0.78} ${W * 0.95},${H * 0.55} ${W * 0.88},${H * 0.3} ${W * 0.96},0`} />
             <polyline className="crack" filter="url(#glow)" points={`${W * 0.5},0 ${W * 0.47},${H * 0.12} ${W * 0.53},${H * 0.22}`} />
+          </>
+        )}
+
+        </g>
+
+        {dying && (
+          <>
+            <rect x="-10" y="-10" width={W + 20} height={H + 20} className="death-flash" />
+            {DUST.map((d) => (
+              <circle key={d.x} cx={d.x} cy={d.y} r={d.r} className="dust" style={{ animationDelay: `${d.d}s` }} />
+            ))}
           </>
         )}
 

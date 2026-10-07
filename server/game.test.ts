@@ -13,6 +13,7 @@ const FAST = {
   bossMs: 1,
   intermissionMs: 1,
   bannerMs: 1,
+  bossDeathMs: 1,
   botMinMs: 1,
   botMaxMs: 2,
 };
@@ -90,6 +91,24 @@ describe('rounds', () => {
     expect(last().chains[0].order).toEqual(['a', 'a']);
     game.submit('a', tasks.get('a')!.chainId, 'x');
     expect(tasks.get('a')!.hopIndex).toBe(1);
+  });
+});
+
+describe('boss death', () => {
+  it('stays in battle at 0 HP while the death plays, then declares victory', async () => {
+    const snaps: Snapshot[] = [];
+    const tasks = new Map<string, Task | null>();
+    const game = new Game(
+      { snapshot: (s) => snaps.push(s), task: (id, t) => tasks.set(id, t), resolve: () => {}, bossAttack: () => {} },
+      { judge: async () => ({ exact: 1, same_concept: 0, related: 0, lost: 0 }), timing: { ...FAST, bossDeathMs: 60 } },
+    );
+    game.join('a', 'A', 'obachan');
+    game.start('a', 2);
+    game.submit('a', tasks.get('a')!.chainId, 'x');
+    game.submit('a', tasks.get('a')!.chainId, 'x');
+    await expect.poll(() => snaps.some((s) => s.phase === 'battle' && s.boss.hp === 0), { timeout: 5000 }).toBe(true);
+    expect(snaps[snaps.length - 1].phase).toBe('battle');
+    await expect.poll(() => snaps[snaps.length - 1].phase, { timeout: 5000 }).toBe('victory');
   });
 });
 

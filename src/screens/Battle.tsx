@@ -151,6 +151,19 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
     };
   }, [resolving]);
 
+  // ── boss death: shudder, then the wall bursts apart (timed with the Boss death animation) ──
+  const bossDead = boss.hp <= 0 && boss.maxHp > 0;
+  useEffect(() => {
+    if (!bossDead) return;
+    audio.sfx('crumble');
+    shake(6, 1200);
+    const t = setTimeout(() => {
+      shake(20, 900);
+      setBanner({ id: Date.now(), text: '言葉の壁が崩れた!', sub: 'THE WALL CRUMBLES!' });
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [bossDead]);
+
   // ── boss attack ──
   const [hurtKey, setHurtKey] = useState(0);
   useEffect(() => {

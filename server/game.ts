@@ -38,6 +38,8 @@ export interface Timing {
   bossMs: number;
   intermissionMs: number;
   bannerMs: number;
+  /** Time the boss death animation gets before the victory screen. */
+  bossDeathMs: number;
   botMinMs: number;
   botMaxMs: number;
 }
@@ -52,6 +54,7 @@ export const DEFAULT_TIMING: Timing = {
   bossMs: 2800,
   intermissionMs: 2600,
   bannerMs: 1800,
+  bossDeathMs: 5200,
   botMinMs: 2500,
   botMaxMs: 6000,
 };
@@ -428,8 +431,16 @@ export class Game {
         spell.tier === 'perfect' ? 'crit' : 'damage',
       );
     }
-    if (this.bossHp <= 0) this.end('victory');
+    if (this.bossHp <= 0) this.bossDefeated();
     else this.broadcast();
+  }
+
+  /** Killing blow: cancel the rest of the round, let clients play the death, then declare victory. */
+  private bossDefeated(): void {
+    this.stopAll();
+    this.addLog(`${this.boss.name} is crumbling!! 言葉の壁が崩れていく…`, 'crit');
+    this.broadcast();
+    this.later(this.timing.bossDeathMs, () => this.end('victory'));
   }
 
   private bossTurn(spells: ResolvedChain[]): void {

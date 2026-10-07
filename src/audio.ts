@@ -341,7 +341,7 @@ class Engine {
     src.stop(t + dur + 0.02);
   }
 
-  sfx(kind: 'blip' | 'select' | 'charge' | 'hit' | 'crit' | 'fizzle' | 'boss' | 'judge' | 'submit'): void {
+  sfx(kind: 'blip' | 'select' | 'charge' | 'hit' | 'crit' | 'fizzle' | 'boss' | 'judge' | 'submit' | 'crumble'): void {
     if (!this.ctx) return;
     switch (kind) {
       case 'blip':
@@ -377,6 +377,14 @@ class Engine {
       case 'boss':
         this.burst(0.8, 0.6, 1200);
         this.sweep('sawtooth', 120, 35, 0.7, 0.18);
+        break;
+      case 'crumble':
+        // death throes rumble, then the wall bursts and rubble rains down
+        for (let i = 0; i < 6; i++) this.burst(0.25, 0.35, 600, i * 0.2);
+        this.sweep('sawtooth', 90, 40, 1.2, 0.12);
+        this.burst(1.6, 0.9, 5000, 1.2);
+        this.sweep('square', 200, 30, 1.0, 0.15, 1.2);
+        for (let i = 0; i < 10; i++) this.sweep('square', 300 + ((i * 97) % 400), 80, 0.12, 0.05, 1.4 + i * 0.12);
         break;
     }
   }
