@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     # NODE_ENV is set by `pnpm start`, not here: setting it at build time would skip devDependencies (vite).
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    buildCommand: pnpm install --frozen-lockfile && pnpm build
     startCommand: pnpm start
     healthCheckPath: /
     envVars:
