@@ -110,6 +110,76 @@ const Wing = ({ side }: { side: 'left' | 'right' }) => (
   </g>
 );
 
+// ── whip tongue ───────────────────────────────────
+
+const WHIP_SEGMENTS = 14;
+const WHIP_FRAMES = 48;
+const WHIP_CYCLE_S = 4.2;
+const WHIP_LENGTH = 108;
+
+/**
+ * Precomputes polygon frames for a whip-like lash: the tongue shoots out, a bend travels down
+ * the chain of segments so the tip curls and snaps, it lashes back the other way and retracts.
+ * Frames are relative to the tongue root (0,0), pointing down.
+ */
+const WHIP_POINTS = (() => {
+  const frames: string[] = [];
+  const smooth = (e0: number, e1: number, x: number) => {
+    const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+    return t * t * (3 - 2 * t);
+  };
+  for (let f = 0; f < WHIP_FRAMES; f++) {
+    const u = f / (WHIP_FRAMES - 1);
+    // Out between 0.30–0.42, retract between 0.82–0.92; hidden otherwise.
+    const ext = smooth(0.3, 0.42, u) * (1 - smooth(0.82, 0.92, u));
+    // The base swings across twice (the "cracks"), while the bend wave travels to the tip.
+    const swing = Math.sin(Math.max(0, u - 0.36) * Math.PI * 4.2) * 0.8 * ext;
+    const amp = 0.72 * ext;
+    const segLen = (WHIP_LENGTH * Math.max(ext, 0.02)) / WHIP_SEGMENTS;
+
+    const pts: { x: number; y: number; a: number }[] = [{ x: 0, y: 0, a: Math.PI / 2 + swing }];
+    let angle = Math.PI / 2 + swing;
+    for (let i = 1; i <= WHIP_SEGMENTS; i++) {
+      const s = i / WHIP_SEGMENTS;
+      angle += amp * Math.sin(u * Math.PI * 9 - s * 5.5) * s * 0.55;
+      const prev = pts[i - 1];
+      pts.push({ x: prev.x + Math.cos(angle) * segLen, y: prev.y + Math.sin(angle) * segLen, a: angle });
+    }
+
+    const left: string[] = [];
+    const right: string[] = [];
+    pts.forEach((p, i) => {
+      const w = (6 - 4 * (i / WHIP_SEGMENTS)) * Math.max(ext, 0.15);
+      const nx = -Math.sin(p.a);
+      const ny = Math.cos(p.a);
+      left.push(`${(p.x + nx * w).toFixed(1)},${(p.y + ny * w).toFixed(1)}`);
+      right.push(`${(p.x - nx * w).toFixed(1)},${(p.y - ny * w).toFixed(1)}`);
+    });
+    const tip = pts[pts.length - 1];
+    const dx = Math.cos(tip.a);
+    const dy = Math.sin(tip.a);
+    const nx = -dy;
+    const ny = dx;
+    const fork = 14 * ext;
+    const spread = 7 * ext;
+    const prongL = `${(tip.x + dx * fork + nx * spread).toFixed(1)},${(tip.y + dy * fork + ny * spread).toFixed(1)}`;
+    const notch = `${(tip.x + dx * fork * 0.3).toFixed(1)},${(tip.y + dy * fork * 0.3).toFixed(1)}`;
+    const prongR = `${(tip.x + dx * fork - nx * spread).toFixed(1)},${(tip.y + dy * fork - ny * spread).toFixed(1)}`;
+    frames.push([...left, prongL, notch, prongR, ...right.reverse()].join(' '));
+  }
+  return frames;
+})();
+
+function WhipTongue({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x} ${y})`} className="tongue">
+      <polygon points={WHIP_POINTS[0]} className="tongue-shape">
+        <animate attributeName="points" dur={`${WHIP_CYCLE_S}s`} repeatCount="indefinite" values={WHIP_POINTS.join(';')} />
+      </polygon>
+    </g>
+  );
+}
+
 // ── boss ──────────────────────────────────────────────
 
 export const Boss = memo(function Boss({ hpPct, hitKey }: { hpPct: number; hitKey: number }) {
@@ -221,12 +291,7 @@ export const Boss = memo(function Boss({ hpPct, hitKey }: { hpPct: number; hitKe
 
         {/* the maw */}
         <polygon points={mouthPoints} fill="url(#maw)" className="maw" />
-        <g className="tongue" style={{ transformOrigin: `${tongueX}px ${tongueY}px` }}>
-          <path
-            d={`M${tongueX - 6},${tongueY} C${tongueX - 14},${tongueY + 22} ${tongueX + 14},${tongueY + 30} ${tongueX + 2},${tongueY + 48} L${tongueX + 16},${tongueY + 66} L${tongueX + 4},${tongueY + 56} L${tongueX - 6},${tongueY + 68} L${tongueX - 4},${tongueY + 50} C${tongueX + 2},${tongueY + 32} ${tongueX - 18},${tongueY + 22} ${tongueX + 6},${tongueY} Z`}
-            className="tongue-shape"
-          />
-        </g>
+        <WhipTongue x={tongueX} y={tongueY} />
         {TEETH.map((t) => (
           <polygon key={t.points} points={t.points} fill="url(#bone)" className="fang" />
         ))}
