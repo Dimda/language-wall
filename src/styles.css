@@ -2089,8 +2089,9 @@ textarea.input-ja:focus {
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   }
   .boss-area .boss {
-    width: 165%;
-    margin: 0 -30% 0 -35%;
+    /* extra-wide to make up for the 45° turn's foreshortening */
+    width: 225%;
+    margin: 0 -82% 0 -43%;
   }
 }
 
@@ -2128,5 +2129,13 @@ textarea.input-ja:focus {
   .resolve .journey li {
     grid-template-columns: minmax(64px, auto) 1fr;
     gap: 6px;
+  }
+}
+
+/* Desktop: the wall turns 45° in 3D to face the party on the right. */
+@media (min-width: 721px) {
+  .stage .boss-svg {
+    transform: perspective(1600px) rotateY(45deg);
+    transform-origin: 30% 60%;
   }
 }
