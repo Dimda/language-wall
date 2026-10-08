@@ -2136,9 +2136,15 @@ textarea.input-ja:focus {
 /* ── walk cycle: stand → left step → stand → right step, leaning toward the wall ── */
 
 .wf {
-  opacity: 0;
   animation: 0.56s steps(1) infinite;
   animation-delay: var(--wd, 0ms);
+}
+
+/* Standing frame shows by default; step frames only appear while the animation runs.
+   If animations don't run (some browsers / settings), fighters still stand there visibly. */
+.wf1,
+.wf2 {
+  opacity: 0;
 }
 
 .wf0 {
@@ -2206,5 +2212,116 @@ textarea.input-ja:focus {
   }
   .wf0 {
     opacity: 1;
+  }
+}
+
+/* ── desktop: the whole battle fits the window — no scrolling ── */
+
+@media (min-width: 721px) {
+  .stage {
+    /* header + party bar + task panel take ~330px; the stage gets the rest */
+    height: clamp(260px, calc(100dvh - 330px), 680px);
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .boss-area {
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .party-area {
+    max-height: 100%;
+  }
+  .projector .stage {
+    height: clamp(300px, calc(100dvh - 260px), 760px);
+  }
+  /* The boss is huge but never taller than the stage allows: on short screens it scales down
+     (by stage height) so its face stays in view. */
+  .stage {
+    container-type: size;
+  }
+  .boss-area .boss {
+    width: min(225%, 260cqh);
+  }
+}
+
+/* ── wide desktop: stage fills the height on the left, task + log in a sidebar — no scrolling ── */
+
+@media (min-width: 900px) and (min-aspect-ratio: 4/3) {
+  .screen.battle {
+    height: 100dvh;
+    padding: 12px 16px;
+    overflow: hidden;
+  }
+  .battle-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 420px);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 10px 14px;
+    height: 100%;
+    max-width: none;
+  }
+  .battle-top {
+    grid-column: 1 / -1;
+  }
+  .stage,
+  .projector .stage {
+    grid-column: 1;
+    grid-row: 2;
+    height: 100%;
+  }
+  .battle-inner > .hpbar-party {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .bottom {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+  }
+  .bottom > .window {
+    flex: none;
+  }
+  .bottom > .log {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .bottom .task-prev {
+    font-size: 30px;
+  }
+  .bottom .task textarea {
+    font-size: 20px;
+  }
+  .bottom .task.waiting {
+    min-height: 120px;
+  }
+  .stage,
+  .stage.many-teams {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .team-group {
+    max-width: 100%;
+  }
+  .team-members {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stage .fighter-name {
+    font-size: 11px;
+    max-width: 64px;
+  }
+  /* Boss sized from the whole stage (not its half): huge, but capped by height so the face fits. */
+  .boss-area {
+    justify-content: flex-start;
+  }
+  .boss-area .boss {
+    width: min(118cqw, 235cqh);
+    margin: 0 0 0 -14cqw;
+    flex: none;
   }
 }
