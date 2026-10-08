@@ -15,12 +15,21 @@ describe('answer guard', () => {
     expect(checkAnswer('仲直り', '仲直りする', 'ja')).not.toBeNull();
     expect(checkAnswer('high five', 'ハイファイブ high five', 'ja')).not.toBeNull();
     expect(checkAnswer('road trip', '車でroadの旅', 'ja')).not.toBeNull();
-    expect(checkAnswer('Best Friend', 'best-friend！', 'en')?.en).toBe("Don't reuse the word you received");
+    expect(checkAnswer('Best Friend', 'best-friend!', 'en')?.en).toBe("You can't use the same word(s) you received");
   });
 
   it('rejects the wrong language', () => {
-    expect(checkAnswer('友達', 'ともだち', 'en')?.en).toBe('Please write it in English only');
-    expect(checkAnswer('homesick', 'homesick feeling', 'ja')?.en).toBe('Please write it in Japanese');
+    expect(checkAnswer('友達', 'ともだち', 'en')?.en).toBe('Use English letters only — no Japanese');
+    expect(checkAnswer('homesick', 'homesick feeling', 'ja')?.en).toBe('Use Japanese characters only — no English letters');
+    expect(checkAnswer('high five', 'High five', 'ja')).not.toBeNull();
+    expect(checkAnswer('road trip', '車でroadの旅', 'ja')?.en).toBe('Use Japanese characters only — no English letters');
+    expect(checkAnswer('友達', 'a café friend', 'en')).not.toBeNull();
+  });
+
+  it('allows everyday punctuation and numbers', () => {
+    expect(checkAnswer('友達', "my buddy, isn't it?", 'en')).toBeNull();
+    expect(checkAnswer('high five', 'ハイタッチ！ 2回', 'ja')).toBeNull();
+    expect(checkAnswer('best friend', '「一番の友達」…', 'ja')).toBeNull();
   });
 
   it('ignores filler words shared between input and answer', () => {

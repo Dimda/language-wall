@@ -629,7 +629,13 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+/** Dev bots always answer in the target language (they never copy the word they received). */
+const BOT_ANSWERS: Record<Lang, string[]> = {
+  ja: ['なかよしのこと', 'たのしい集まり', 'みんなで話すこと', 'なつかしい気持ち', 'うれしいあいさつ'],
+  en: ['a fun get-together', 'being close friends', 'a friendly greeting', 'a warm feeling', 'talking with everyone'],
+};
+
 function botAnswer(t: Task): string {
-  if (Math.random() < 0.4) return t.prevText;
-  return t.toLang === 'ja' ? `「${t.prevText}」みたいなこと` : `something like "${t.prevText}"`;
+  const pool = BOT_ANSWERS[t.toLang];
+  return pool[Math.floor(Math.random() * pool.length)];
 }

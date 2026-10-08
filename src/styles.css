@@ -2353,3 +2353,28 @@ textarea.input-error {
     transform: translateX(4px);
   }
 }
+
+/* ── the SEND button can never be pushed out of view ── */
+
+.task .task-foot {
+  position: sticky;
+  bottom: -14px;
+  margin: 0 -18px -14px;
+  padding: 6px 18px 10px;
+  background: linear-gradient(180deg, rgba(0, 0, 16, 0.6), #000010 40%);
+}
+
+@media (min-width: 900px) and (min-aspect-ratio: 4/3) {
+  .bottom > .task {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .bottom > .log {
+    flex: 1 1 80px;
+  }
+  /* never squash the input — scroll the panel instead */
+  .bottom > .task > * {
+    flex-shrink: 0;
+  }
+}
