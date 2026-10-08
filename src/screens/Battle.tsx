@@ -61,13 +61,11 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
   const roles = useMemo(() => rolesFrom(snapshot), [snapshot]);
   const narrow = useNarrow();
   const myTeam = me ? snapshot.teams.find((t) => t.members.includes(me.id)) : undefined;
-  // Your own team is shown big; everyone else as compact team cards so the boss keeps its size.
-  // The projector has no team of its own, so it scales everyone by headcount.
+  // Desktop / projector: every team the same size, scaled by headcount.
+  // Phones: your own team stays big, everyone else as compact team cards so the boss keeps its size.
   const n = players.length;
-  const projectorSize = n <= 6 ? 64 : n <= 12 ? 48 : n <= 20 ? 36 : 28;
-  const mySize = narrow ? 52 : 72;
-  const otherSize = isScreen ? projectorSize : narrow ? 20 : 30;
-  const othersCompact = !isScreen || n > 12;
+  const uniformSize = n > 10 ? 40 : n > 6 ? 52 : n > 3 ? 64 : 80;
+  const phoneFocus = narrow && !!myTeam;
 
   // ── canvas FX lifecycle ──
   useEffect(() => {
@@ -186,6 +184,7 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
   const channeling = resolving && (spellStage === 'judge' || spellStage === 'spell') ? new Set(resolving.timeline.chain.casters) : null;
 
   const renderFighter = (p: PlayerPublic, mine: boolean) => {
+    const compact = phoneFocus && !mine;
     const r = roles.get(p.id);
     const role: FighterRole = channeling?.has(p.id) ? 'channel' : turn === 'casting' ? (r?.role ?? 'idle') : 'idle';
     const element = channeling?.has(p.id) ? resolving!.timeline.chain.element : (r?.element ?? null);
@@ -195,14 +194,14 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
         player={p}
         role={role}
         element={element}
-        size={mine ? mySize : otherSize}
-        compact={!mine && othersCompact}
+        size={!phoneFocus ? uniformSize : mine ? 52 : 20}
+        compact={compact}
         isMe={p.id === me?.id}
         hurtKey={hurtKey}
       />
     );
   };
-  const orderedTeams = myTeam ? [myTeam, ...snapshot.teams.filter((t) => t !== myTeam)] : snapshot.teams;
+  const orderedTeams = phoneFocus && myTeam ? [myTeam, ...snapshot.teams.filter((t) => t !== myTeam)] : snapshot.teams;
 
   const myRole = me ? roles.get(me.id) : undefined;
   const status =
@@ -246,7 +245,7 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
               return (
                 <div
                   key={team.id}
-                  className={`team-group ${mine ? 'mine' : ''} ${!mine && othersCompact ? 'compact' : ''}`}
+                  className={`team-group ${mine ? 'mine' : ''} ${phoneFocus && !mine ? 'compact' : ''}`}
                   style={{ '--el': ELEMENT_COLOR[team.element] } as React.CSSProperties}
                 >
                   <span className="team-label">
