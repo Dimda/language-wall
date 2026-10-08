@@ -2060,3 +2060,17 @@ textarea.input-ja:focus {
 .team-grid .team-label {
   font-size: 11px;
 }
+
+/* ── desktop: use the full width, bigger stage ── */
+
+@media (min-width: 721px) {
+  .battle-inner {
+    max-width: 1600px;
+  }
+  .stage {
+    min-height: clamp(340px, 52vh, 680px);
+  }
+  .boss-area .boss {
+    width: min(820px, 100%);
+  }
+}

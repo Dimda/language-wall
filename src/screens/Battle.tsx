@@ -60,11 +60,14 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
   const players = snapshot.players.filter((p) => p.connected);
   const roles = useMemo(() => rolesFrom(snapshot), [snapshot]);
   const narrow = useNarrow();
+  const viewportWidth = useViewportWidth();
   const myTeam = me ? snapshot.teams.find((t) => t.members.includes(me.id)) : undefined;
   // Desktop / projector: every team the same size, scaled by headcount.
   // Phones: your own team stays big, everyone else as compact team cards so the boss keeps its size.
   const n = players.length;
-  const uniformSize = n > 15 ? 36 : n > 10 ? 44 : n > 6 ? 52 : n > 3 ? 64 : 80;
+  // Sprites grow with the (desktop) window: ×1 at ~900px wide, up to ×1.8 on big screens.
+  const scale = narrow ? 1 : Math.min(1.8, Math.max(1, viewportWidth / 900));
+  const uniformSize = Math.round((n > 15 ? 36 : n > 10 ? 44 : n > 6 ? 52 : n > 3 ? 64 : 80) * scale);
   const phoneFocus = narrow && !!myTeam;
   // 3+ teams (up to 6 with the 30-player cap) sit in a 2-column grid beside the boss.
   const gridTeams = !phoneFocus && snapshot.teams.length >= 3;
@@ -289,6 +292,16 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
       {bossAttack && <div key={bossAttack.id} className="flash" />}
     </div>
   );
+}
+
+function useViewportWidth(): number {
+  const [w, setW] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setW(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return w;
 }
 
 function useNarrow(): boolean {
