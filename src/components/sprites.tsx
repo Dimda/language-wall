@@ -295,18 +295,18 @@ export const AVATARS: AvatarDef[] = [
     label: 'Nipponbashi Otaku',
     labelJa: '日本橋のオタク',
     paint: (p) => {
-      // small backpack peeking out on the left
-      p.rect(2, 15, 4, 8, '#2a2a3a').rect(2, 15, 4, 1, '#4a4a5a');
+      // small backpack peeking out on the right
+      p.rect(18, 14, 4, 9, '#2a2a3a').rect(18, 14, 4, 1, '#4a4a5a').rect(19, 17, 2, 3, '#3a3a4a');
       const o = { skin: '#fbe0d0', top: '#ff8ac8', bottom: '#3a4a7a', shoes: '#e8e8e8', blush: '#f0a0a0' };
       body(p, o);
       // heart print on the tee + backpack straps
       p.pixels([[11, 18], [13, 18], [10, 19], [11, 19], [12, 19], [13, 19], [14, 19], [11, 20], [12, 20], [13, 20], [12, 21]], '#ffffff');
       p.rect(8, 16, 1, 6, '#2a2a3a').rect(15, 16, 1, 6, '#2a2a3a');
-      // paper shopping bag full of anime goods, held in the right hand
-      p.pixels([[18, 18], [18, 19], [21, 18], [21, 19], [19, 17], [20, 17]], '#8a6a4a'); // handles
-      p.rect(17, 20, 6, 7, '#f4ece0');
-      p.pixels([[18, 21], [19, 21], [21, 21], [22, 21], [18, 22], [19, 22], [20, 22], [21, 22], [22, 22], [19, 23], [20, 23], [21, 23], [20, 24]], '#ff6ab0'); // heart logo
-      p.rect(18, 19, 1, 1, '#8ad8ff').rect(20, 19, 2, 1, '#ffe040'); // goods sticking out
+      // paper shopping bag full of anime goods, held in the left hand
+      p.pixels([[2, 18], [2, 19], [5, 18], [5, 19], [3, 17], [4, 17]], '#8a6a4a'); // handles
+      p.rect(1, 20, 6, 7, '#f4ece0');
+      p.pixels([[1, 21], [2, 21], [4, 21], [5, 21], [1, 22], [2, 22], [3, 22], [4, 22], [5, 22], [2, 23], [3, 23], [4, 23], [3, 24]], '#ff6ab0'); // heart logo
+      p.rect(2, 19, 1, 1, '#8ad8ff').rect(4, 19, 2, 1, '#ffe040'); // goods sticking out
       const H = '#d8642a';
       p.ellipse(12, 6, 7, 4.2, H);
       p.pixels([[5, 7], [5, 8], [18, 7], [18, 8], [8, 2], [13, 1], [16, 2], [19, 6]], H);
