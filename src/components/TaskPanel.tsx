@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Lang, Task } from '../../shared/types';
 import { audio } from '../audio';
-import { socket } from '../net';
+import { checkAnswer, type Rejection } from '../../shared/guard';
+import { socket, useGame } from '../net';
 import { ELEMENT_COLOR, ELEMENT_LABEL } from './sprites';
 import { Typewriter, useNow } from './ui';
 
@@ -31,9 +32,19 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
   const idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const now = useNow(200);
   const taskKey = task ? `${task.chainId}:${task.hopIndex}` : '';
+  const [error, setError] = useState<Rejection | null>(null);
+  const { rejection } = useGame();
+
+  // The server can refuse an answer too (same rule); show its reason the same way.
+  useEffect(() => {
+    if (!rejection) return;
+    setError(rejection);
+    audio.sfx('fizzle');
+  }, [rejection?.id]);
 
   useEffect(() => {
     setText('');
+    setError(null);
     typingSent.current = false;
     if (taskKey) {
       audio.sfx('select');
@@ -58,6 +69,7 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
 
   const onChange = (value: string) => {
     setText(value);
+    setError(null);
     setTyping(value.length > 0);
     clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => setTyping(false), TYPING_IDLE_MS);
@@ -66,6 +78,13 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!text.trim()) return;
+    const reason = checkAnswer(task.prevText, text, task.toLang);
+    if (reason) {
+      setError(reason);
+      audio.sfx('fizzle');
+      inputRef.current?.focus();
+      return;
+    }
     clearTimeout(idleTimer.current);
     audio.sfx('submit');
     socket.emit('submit', { chainId: task.chainId, text });
@@ -99,7 +118,7 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
       </div>
       <textarea
         ref={inputRef}
-        className={`input-${task.toLang}`}
+        className={`input-${task.toLang} ${error ? 'input-error' : ''}`}
         rows={2}
         maxLength={200}
         value={text}
@@ -112,6 +131,11 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
           }
         }}
       />
+      {error && (
+        <p key={JSON.stringify(error)} className="answer-error" role="alert">
+          ✕ {error.ja} / {error.en}
+        </p>
+      )}
       <div className="task-foot">
         <small>Enterで送信 / Press Enter to send</small>
         <button className="btn primary" type="submit" disabled={!text.trim()}>

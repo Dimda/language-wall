@@ -28,6 +28,7 @@ const game = new Game(
     task: (playerId, t) => (t ? io.to(playerId).emit('task', t) : io.to(playerId).emit('taskCleared')),
     resolve: (t) => io.emit('resolve', t),
     bossAttack: (damage) => io.emit('bossAttack', { damage }),
+    rejected: (playerId, reason) => io.to(playerId).emit('submitRejected', reason),
   },
   {
     devMode: process.env.DEV_BOTS === '1' || !prod,

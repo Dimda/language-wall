@@ -4,6 +4,9 @@ import { Game, type Outbox } from './game';
 import { chainMultiplier, teamSizes } from '../shared/teams';
 import { damageFrom, mockJudge } from './judge';
 
+/** A valid (guard-passing) answer in the task's target language. */
+const ans = (t: Task, en = 'test answer', ja = 'テスト') => (t.toLang === 'ja' ? ja : en);
+
 const FAST = {
   hopMs: 5000,
   revealBaseMs: 1,
@@ -49,13 +52,13 @@ describe('rounds', () => {
     const second = chain.order[1];
     const t1 = tasks.get(first)!;
     expect(tasks.get(second)).toBeUndefined();
-    game.submit(first, t1.chainId, 'hop one');
+    game.submit(first, t1.chainId, ans(t1, 'hop one', 'ホップ'));
 
     const t2 = tasks.get(second)!;
-    expect(t2.prevText).toBe('hop one');
+    expect(t2.prevText).toBe(ans(t1, 'hop one', 'ホップ'));
     expect(t2.fromLang).toBe(t1.toLang);
     expect(t2.toLang).toBe(t1.fromLang);
-    game.submit(second, t2.chainId, 'final');
+    game.submit(second, t2.chainId, ans(t2, 'final', 'さいご'));
 
     expect(last().turn).toBe('resolving');
     await expect.poll(() => resolves.length).toBe(1);
@@ -90,7 +93,7 @@ describe('rounds', () => {
     game.join('a', 'A', 'shika');
     game.start('a');
     expect(last().chains[0].order).toEqual(['a']);
-    game.submit('a', tasks.get('a')!.chainId, 'x');
+    game.submit('a', tasks.get('a')!.chainId, ans(tasks.get('a')!));
     expect(last().chains[0].status).toBe('done');
   });
 });
@@ -151,11 +154,30 @@ describe('teams', () => {
     for (let i = 0; i < 4; i++) game.join(`p${i}`, `P${i}`, 'obachan');
     game.start('p0');
     const chain = last().chains[0];
-    for (const pid of chain.order) game.submit(pid, tasks.get(pid)!.chainId, 'same');
+    for (const pid of chain.order) game.submit(pid, tasks.get(pid)!.chainId, ans(tasks.get(pid)!));
     await expect.poll(() => resolves.length, { timeout: 5000 }).toBe(1);
     const spell = resolves[0].chain;
     expect(spell.multiplier).toBe(2);
     expect(spell.damage).toBe(Math.round(damageFrom(spell.judge).damage * 2));
+  });
+});
+
+describe('answer guard in game', () => {
+  it('refuses a human answer that reuses the word, and keeps the hop open', () => {
+    const rejections: string[] = [];
+    const tasks = new Map<string, Task | null>();
+    const game = new Game(
+      { snapshot: () => {}, task: (id, t) => tasks.set(id, t), resolve: () => {}, bossAttack: () => {}, rejected: (_id, r) => rejections.push(r.en) },
+      { judge: mockJudge, timing: FAST },
+    );
+    game.join('a', 'A', 'obachan');
+    game.join('b', 'B', 'gaijin');
+    game.start('a');
+    const [first] = ['a', 'b'].filter((id) => tasks.get(id));
+    const task = tasks.get(first)!;
+    game.submit(first, task.chainId, task.prevText); // just passing the word along
+    expect(rejections).toHaveLength(1);
+    expect(tasks.get(first)?.hopIndex).toBe(0); // still their turn
   });
 });
 
@@ -169,7 +191,7 @@ describe('boss death', () => {
     );
     game.join('a', 'A', 'obachan');
     game.start('a');
-    game.submit('a', tasks.get('a')!.chainId, 'x');
+    game.submit('a', tasks.get('a')!.chainId, ans(tasks.get('a')!));
     await expect.poll(() => snaps.some((s) => s.phase === 'battle' && s.boss.hp === 0), { timeout: 5000 }).toBe(true);
     expect(snaps[snaps.length - 1].phase).toBe('battle');
     await expect.poll(() => snaps[snaps.length - 1].phase, { timeout: 5000 }).toBe('victory');

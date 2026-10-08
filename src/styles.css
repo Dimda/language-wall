@@ -2325,3 +2325,31 @@ textarea.input-ja:focus {
     flex: none;
   }
 }
+
+/* ── answer guard feedback ── */
+
+.answer-error {
+  margin: 0;
+  padding: 4px 8px;
+  border: 2px solid var(--red);
+  border-radius: 4px;
+  background: rgba(255, 74, 90, 0.15);
+  color: #ffb0b8;
+  font-size: 14px;
+  animation: pop 0.25s steps(3);
+}
+
+textarea.input-error {
+  border-color: var(--red);
+  animation: input-shake 0.3s steps(6);
+}
+
+@keyframes input-shake {
+  25%,
+  75% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}

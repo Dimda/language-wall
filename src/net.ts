@@ -32,9 +32,11 @@ interface State {
   task: Task | null;
   resolving: Resolving | null;
   bossAttack: { id: number; damage: number } | null;
+  /** Latest refusal of my answer by the server, shown under the input. */
+  rejection: { id: number; ja: string; en: string } | null;
 }
 
-let state: State = { connected: false, snapshot: null, task: null, resolving: null, bossAttack: null };
+let state: State = { connected: false, snapshot: null, task: null, resolving: null, bossAttack: null, rejection: null };
 const listeners = new Set<() => void>();
 let seq = 0;
 
@@ -54,10 +56,11 @@ socket.on('snapshot', (snapshot) => {
   if (snapshot.phase === 'battle' && snapshot.turn === 'casting') patch.resolving = null;
   set(patch);
 });
-socket.on('task', (task) => set({ task }));
+socket.on('task', (task) => set({ task, rejection: null }));
 socket.on('taskCleared', () => set({ task: null }));
 socket.on('resolve', (timeline) => set({ resolving: { timeline, receivedAt: performance.now() } }));
 socket.on('bossAttack', ({ damage }) => set({ bossAttack: { id: ++seq, damage } }));
+socket.on('submitRejected', (r) => set({ rejection: { id: ++seq, ...r } }));
 
 const subscribe = (l: () => void) => {
   listeners.add(l);

@@ -1,3 +1,4 @@
+import { checkAnswer, type Rejection } from '../shared/guard';
 import { chainMultiplier, MAX_PLAYERS, MAX_TEAM_SIZE, teamName, teamSizes } from '../shared/teams';
 import { WORDS } from '../shared/words';
 import {
@@ -28,6 +29,8 @@ export interface Outbox {
   task(playerId: string, t: Task | null): void;
   resolve(t: ResolveTimeline): void;
   bossAttack(damage: number): void;
+  /** A player's answer was refused (copied the word / wrong language); tell only them why. */
+  rejected?(playerId: string, reason: Rejection): void;
 }
 
 export interface Timing {
@@ -379,6 +382,13 @@ export class Game {
 
     const hopIndex = c.hops.length;
     const fromLang = hopLang(c, hopIndex);
+    if (!p.isBot) {
+      const reason = checkAnswer(hopInput(c, hopIndex), clean, otherLang(fromLang));
+      if (reason) {
+        this.out.rejected?.(playerId, reason);
+        return;
+      }
+    }
     const hop: Hop = {
       playerId,
       playerName: p.name,

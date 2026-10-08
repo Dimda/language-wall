@@ -1,3 +1,4 @@
+import type { Rejection } from './guard';
 import type { AvatarId, ResolveTimeline, Snapshot, Task } from './types';
 
 export interface ClientToServer {
@@ -16,4 +17,5 @@ export interface ServerToClient {
   taskCleared: () => void;
   resolve: (t: ResolveTimeline) => void;
   bossAttack: (p: { damage: number }) => void;
+  submitRejected: (r: Rejection) => void;
 }
