@@ -59,7 +59,15 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
 
   const players = snapshot.players.filter((p) => p.connected);
   const roles = useMemo(() => rolesFrom(snapshot), [snapshot]);
-  const spriteSize = players.length > 10 ? 40 : players.length > 6 ? 52 : players.length > 3 ? 64 : 80;
+  const narrow = useNarrow();
+  const myTeam = me ? snapshot.teams.find((t) => t.members.includes(me.id)) : undefined;
+  // Your own team is shown big; everyone else as compact team cards so the boss keeps its size.
+  // The projector has no team of its own, so it scales everyone by headcount.
+  const n = players.length;
+  const projectorSize = n <= 6 ? 64 : n <= 12 ? 48 : n <= 20 ? 36 : 28;
+  const mySize = narrow ? 52 : 72;
+  const otherSize = isScreen ? projectorSize : narrow ? 20 : 30;
+  const othersCompact = !isScreen || n > 12;
 
   // ── canvas FX lifecycle ──
   useEffect(() => {
@@ -177,14 +185,24 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
   const spellStage = resolving ? stageAt(resolving.timeline, elapsed) : null;
   const channeling = resolving && (spellStage === 'judge' || spellStage === 'spell') ? new Set(resolving.timeline.chain.casters) : null;
 
-  const renderFighter = (p: PlayerPublic) => {
+  const renderFighter = (p: PlayerPublic, mine: boolean) => {
     const r = roles.get(p.id);
     const role: FighterRole = channeling?.has(p.id) ? 'channel' : turn === 'casting' ? (r?.role ?? 'idle') : 'idle';
     const element = channeling?.has(p.id) ? resolving!.timeline.chain.element : (r?.element ?? null);
     return (
-      <Fighter key={p.id} player={p} role={role} element={element} size={spriteSize} isMe={p.id === me?.id} hurtKey={hurtKey} />
+      <Fighter
+        key={p.id}
+        player={p}
+        role={role}
+        element={element}
+        size={mine ? mySize : otherSize}
+        compact={!mine && othersCompact}
+        isMe={p.id === me?.id}
+        hurtKey={hurtKey}
+      />
     );
   };
+  const orderedTeams = myTeam ? [myTeam, ...snapshot.teams.filter((t) => t !== myTeam)] : snapshot.teams;
 
   const myRole = me ? roles.get(me.id) : undefined;
   const status =
@@ -204,7 +222,7 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
     <div className={`screen battle ${isScreen ? 'projector' : ''}`}>
       <div ref={innerRef} className="battle-inner">
         <div className="battle-top">
-          <HpBar label="言葉の壁 / THE LANGUAGE WALL" hp={boss.hp} max={boss.maxHp} variant="boss" />
+          <HpBar label={narrow ? '言葉の壁' : '言葉の壁 / THE LANGUAGE WALL'} hp={boss.hp} max={boss.maxHp} variant="boss" />
           <span className="round-tag">ROUND {round}</span>
         </div>
 
@@ -221,23 +239,24 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
           </div>
 
           <div className="party-area">
-            {snapshot.teams.map((team) => {
+            {orderedTeams.map((team) => {
               const members = players.filter((p) => team.members.includes(p.id));
               if (members.length === 0) return null;
+              const mine = team === myTeam;
               return (
                 <div
                   key={team.id}
-                  className={`team-group ${me && team.members.includes(me.id) ? 'mine' : ''}`}
+                  className={`team-group ${mine ? 'mine' : ''} ${!mine && othersCompact ? 'compact' : ''}`}
                   style={{ '--el': ELEMENT_COLOR[team.element] } as React.CSSProperties}
                 >
                   <span className="team-label">
                     {ELEMENT_LABEL[team.element].icon} {team.name}
                   </span>
-                  <div className="team-members">{members.map(renderFighter)}</div>
+                  <div className="team-members">{members.map((p) => renderFighter(p, mine))}</div>
                 </div>
               );
             })}
-            {players.filter((p) => !snapshot.teams.some((t) => t.members.includes(p.id))).map(renderFighter)}
+            {players.filter((p) => !snapshot.teams.some((t) => t.members.includes(p.id))).map((p) => renderFighter(p, false))}
           </div>
 
           <canvas ref={canvasRef} className="fx" />
@@ -269,6 +288,18 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
       {bossAttack && <div key={bossAttack.id} className="flash" />}
     </div>
   );
+}
+
+function useNarrow(): boolean {
+  const query = '(max-width: 720px)';
+  const [narrow, setNarrow] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setNarrow(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return narrow;
 }
 
 /** Projector view: who is casting what right now. */

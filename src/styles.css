@@ -1965,3 +1965,65 @@ textarea.input-ja:focus {
     font-size: 18px;
   }
 }
+
+/* ── many teams: compact cards, boss keeps its size ── */
+
+.stage {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+
+.team-group.compact {
+  padding: 2px 6px 4px;
+  gap: 1px;
+  border-width: 1px;
+}
+
+.team-group.compact .team-label {
+  font-size: 10px;
+}
+
+.team-group.compact .team-members {
+  gap: 2px;
+}
+
+.fighter.compact {
+  gap: 0;
+}
+
+.fighter.compact .fighter-name {
+  display: none;
+}
+
+.fighter.compact .bubble {
+  top: -7px;
+  right: -7px;
+  font-size: 8px;
+  padding: 0 2px;
+  border-width: 1px;
+  border-radius: 4px;
+}
+
+.fighter.compact .fighter-shadow {
+  height: 3px;
+}
+
+.party-area {
+  gap: 10px 8px;
+}
+
+@media (max-width: 720px) {
+  /* Phones: boss on top at full width, the party strip underneath. */
+  .stage {
+    grid-template-columns: 1fr;
+    align-items: end;
+    gap: 6px;
+    min-height: 0;
+    padding-top: 16px;
+  }
+  .boss-area .boss {
+    width: min(440px, 96%);
+  }
+  .party-area {
+    gap: 6px 4px;
+  }
+}
