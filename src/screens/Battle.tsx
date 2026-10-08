@@ -64,8 +64,10 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
   // Desktop / projector: every team the same size, scaled by headcount.
   // Phones: your own team stays big, everyone else as compact team cards so the boss keeps its size.
   const n = players.length;
-  const uniformSize = n > 10 ? 40 : n > 6 ? 52 : n > 3 ? 64 : 80;
+  const uniformSize = n > 15 ? 36 : n > 10 ? 44 : n > 6 ? 52 : n > 3 ? 64 : 80;
   const phoneFocus = narrow && !!myTeam;
+  // 3+ teams (up to 6 with the 30-player cap) sit in a 2-column grid beside the boss.
+  const gridTeams = !phoneFocus && snapshot.teams.length >= 3;
 
   // ── canvas FX lifecycle ──
   useEffect(() => {
@@ -225,7 +227,7 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
           <span className="round-tag">ROUND {round}</span>
         </div>
 
-        <div ref={stageRef} className="stage">
+        <div ref={stageRef} className={`stage ${gridTeams ? 'many-teams' : ''}`}>
           <KansaiBackdrop />
           <div ref={bossRef} className="boss-area">
             <Boss hpPct={bossPct} hitKey={bossHit} />
@@ -237,7 +239,7 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
             ))}
           </div>
 
-          <div className="party-area">
+          <div className={`party-area ${gridTeams ? 'team-grid' : ''}`}>
             {orderedTeams.map((team) => {
               const members = players.filter((p) => team.members.includes(p.id));
               if (members.length === 0) return null;

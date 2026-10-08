@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { AvatarId, Phase } from '../../shared/types';
 import { audio } from '../audio';
+import { MAX_PLAYERS } from '../../shared/teams';
 import { AVATARS, Sprite } from '../components/sprites';
 import { socket } from '../net';
 
@@ -14,7 +15,8 @@ function load(): { name: string; avatar: AvatarId } {
   }
 }
 
-export function Join({ phase }: { phase: Phase }) {
+export function Join({ phase, count }: { phase: Phase; count: number }) {
+  const full = count >= MAX_PLAYERS;
   const saved = load();
   const [name, setName] = useState(saved.name);
   const [avatar, setAvatar] = useState<AvatarId>(saved.avatar);
@@ -64,7 +66,12 @@ export function Join({ phase }: { phase: Phase }) {
             ))}
           </div>
         </div>
-        <button className="btn primary" type="submit" disabled={!name.trim()}>
+        {full && (
+          <p className="warn">
+            満員です（{MAX_PLAYERS}人まで） / The party is full ({MAX_PLAYERS} max)
+          </p>
+        )}
+        <button className="btn primary" type="submit" disabled={!name.trim() || full}>
           ▶ {phase === 'battle' ? 'JOIN THE BATTLE' : 'JOIN'}
         </button>
       </form>

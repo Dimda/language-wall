@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
-import { MAX_TEAM_SIZE, teamSizes } from '../../shared/teams';
+import { MAX_PLAYERS, MAX_TEAM_SIZE, teamSizes } from '../../shared/teams';
 import type { PlayerPublic, Snapshot } from '../../shared/types';
 import { audio } from '../audio';
 import { Sprite } from '../components/sprites';
@@ -40,14 +40,14 @@ export function Lobby({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic |
           {players.map((p) => (
             <div key={p.id} className={`lobby-fighter ${p.id === me?.id ? 'me' : ''}`}>
               <span className="fighter-name">{p.name}</span>
-              <Sprite avatar={p.avatar} size={isScreen ? 72 : 56} />
+              <Sprite avatar={p.avatar} size={players.length > 12 ? (isScreen ? 48 : 36) : isScreen ? 72 : 56} />
               <small>{p.isHost ? '★HOST' : p.isBot ? 'BOT' : ''}</small>
             </div>
           ))}
         </div>
         {sizes.length > 0 && (
           <p className="team-preview">
-            {sizes.length === 1 ? '1 team' : `${sizes.length} teams`} of {sizes.join(' · ')} — formed when the battle starts
+            {players.length}/{MAX_PLAYERS} · {sizes.length === 1 ? '1 team' : `${sizes.length} teams`} of {sizes.join(' · ')} — formed when the battle starts
             <small>チームはバトル開始時に自動で決まります（最大{MAX_TEAM_SIZE}人）</small>
           </p>
         )}

@@ -2027,3 +2027,36 @@ textarea.input-ja:focus {
     gap: 6px 4px;
   }
 }
+
+/* ── up to 30 players: teams in a 2-column grid beside the boss (desktop/projector) ── */
+
+.stage.many-teams {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+}
+
+.party-area.team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: end;
+  gap: 8px;
+}
+
+.team-grid .team-group {
+  padding: 3px 4px 4px;
+  min-width: 0;
+}
+
+.team-grid .team-members {
+  gap: 2px;
+  max-width: 100%;
+}
+
+.team-grid .fighter-name {
+  font-size: 10px;
+  max-width: 54px;
+  padding: 0 2px;
+}
+
+.team-grid .team-label {
+  font-size: 11px;
+}

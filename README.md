@@ -25,6 +25,7 @@ Env vars: `PORT` (production), `API_PORT` (dev API), `HOP_SECONDS` (time per hop
 
 ## How it plays
 
+- Up to 30 players (bots included); the join screen shows "party full" beyond that.
 - When the battle starts, players are split into the fewest teams of at most 5, as evenly as possible
   (21 players → 5·4·4·4·4). Late joiners go to the smallest team.
 - Each round every team casts one chain together: every member translates once, alternating JA ⇄ EN.

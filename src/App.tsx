@@ -41,7 +41,7 @@ export function App() {
 
   const me = snapshot.players.find((p) => p.id === playerId) ?? null;
   let screen: React.ReactNode;
-  if (!me && !isScreen) screen = <Join phase={snapshot.phase} />;
+  if (!me && !isScreen) screen = <Join phase={snapshot.phase} count={snapshot.players.filter((p) => p.connected).length} />;
   else if (snapshot.phase === 'lobby') screen = <Lobby snapshot={snapshot} me={me} />;
   else if (snapshot.phase === 'battle') screen = <Battle snapshot={snapshot} me={me} />;
   else screen = <End snapshot={snapshot} me={me} />;

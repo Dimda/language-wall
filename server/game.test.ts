@@ -124,6 +124,16 @@ describe('teams', () => {
     }
   });
 
+  it('caps the party at 30 players', () => {
+    const { game, last } = setup();
+    for (let i = 0; i < 35; i++) game.join(`p${i}`, `P${i}`, 'obachan');
+    expect(last().players).toHaveLength(30);
+    game.addBot();
+    expect(last().players).toHaveLength(30);
+    game.join('p0', 'Renamed', 'gaijin'); // existing players can still update themselves
+    expect(last().players.find((p) => p.id === 'p0')?.name).toBe('Renamed');
+  });
+
   it('late joiners go to the smallest team', () => {
     const { game, last } = setup();
     for (let i = 0; i < 7; i++) game.join(`p${i}`, `P${i}`, 'obachan');

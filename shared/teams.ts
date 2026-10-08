@@ -1,4 +1,6 @@
 export const MAX_TEAM_SIZE = 5;
+/** Hard cap so the battle layout can be tuned for at most 6 teams of 5. */
+export const MAX_PLAYERS = 30;
 
 /**
  * Split `n` players into the fewest teams of at most MAX_TEAM_SIZE, with sizes differing by at

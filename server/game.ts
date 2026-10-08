@@ -1,4 +1,4 @@
-import { chainMultiplier, MAX_TEAM_SIZE, teamName, teamSizes } from '../shared/teams';
+import { chainMultiplier, MAX_PLAYERS, MAX_TEAM_SIZE, teamName, teamSizes } from '../shared/teams';
 import { WORDS } from '../shared/words';
 import {
   AVATAR_IDS,
@@ -141,7 +141,13 @@ export class Game {
     return this.players.has(id);
   }
 
+  /** Connected players, bots included — what the MAX_PLAYERS cap counts. */
+  private headcount(): number {
+    return this.activePlayers().length;
+  }
+
   join(id: string, name: string, avatar: AvatarId): void {
+    if (!this.players.has(id) && this.headcount() >= MAX_PLAYERS) return; // party is full
     const clean = name.trim().slice(0, 16) || 'Anon';
     const av = AVATAR_IDS.includes(avatar) ? avatar : AVATAR_IDS[0];
     const existing = this.players.get(id);
@@ -196,7 +202,7 @@ export class Game {
   }
 
   addBot(): void {
-    if (!this.devMode) return;
+    if (!this.devMode || this.headcount() >= MAX_PLAYERS) return;
     const n = [...this.players.values()].filter((p) => p.isBot).length;
     const id = `bot-${n}-${Date.now()}`;
     const name = BOT_NAMES[n % BOT_NAMES.length] + (n >= BOT_NAMES.length ? n : '');
