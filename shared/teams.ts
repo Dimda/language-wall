@@ -29,5 +29,5 @@ export const teamName = (i: number) => {
   return lap ? { ja: `${n.ja}${lap + 1}`, en: `${n.en} ${lap + 1}` } : n;
 };
 
-/** Longer chains are harder, so they hit harder: damage scales with hops (2 hops = ×1). */
+/** Longer chains are harder, so they hit harder: damage scales with hops (1–2 hops = ×1, 5 hops = ×2.5). */
 export const chainMultiplier = (hops: number) => Math.max(1, hops / 2);

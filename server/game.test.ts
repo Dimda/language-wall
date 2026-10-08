@@ -85,13 +85,13 @@ describe('rounds', () => {
     await expect.poll(() => last().chains[0]?.status ?? last().turn).not.toBe('casting');
   });
 
-  it('a solo player casts both hops', () => {
+  it('a solo player translates once', () => {
     const { game, tasks, last } = setup();
     game.join('a', 'A', 'shika');
     game.start('a');
-    expect(last().chains[0].order).toEqual(['a', 'a']);
+    expect(last().chains[0].order).toEqual(['a']);
     game.submit('a', tasks.get('a')!.chainId, 'x');
-    expect(tasks.get('a')!.hopIndex).toBe(1);
+    expect(last().chains[0].status).toBe('done');
   });
 });
 
@@ -119,8 +119,7 @@ describe('teams', () => {
     expect(chains).toHaveLength(2);
     for (const c of chains) {
       const team = teams.find((t) => t.id === c.teamId)!;
-      expect(new Set(c.order)).toEqual(new Set(team.members));
-      expect(c.order.length % 2).toBe(0);
+      expect([...c.order].sort()).toEqual([...team.members].sort());
       expect(c.element).toBe(team.element);
     }
   });
@@ -160,7 +159,6 @@ describe('boss death', () => {
     );
     game.join('a', 'A', 'obachan');
     game.start('a');
-    game.submit('a', tasks.get('a')!.chainId, 'x');
     game.submit('a', tasks.get('a')!.chainId, 'x');
     await expect.poll(() => snaps.some((s) => s.phase === 'battle' && s.boss.hp === 0), { timeout: 5000 }).toBe(true);
     expect(snaps[snaps.length - 1].phase).toBe('battle');

@@ -27,6 +27,5 @@ Env vars: `PORT` (production), `API_PORT` (dev API), `HOP_SECONDS` (time per hop
 
 - When the battle starts, players are split into the fewest teams of at most 5, as evenly as possible
   (21 players → 5·4·4·4·4). Late joiners go to the smallest team.
-- Each round every team casts one chain together, alternating JA ⇄ EN and ending in the source language
-  (odd-sized teams loop back to their first caster).
+- Each round every team casts one chain together: every member translates once, alternating JA ⇄ EN.
 - Damage scales with chain length: ×(hops / 2), so a 6-hop chain hits three times as hard as a 2-hop one.

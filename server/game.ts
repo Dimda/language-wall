@@ -318,17 +318,15 @@ export class Game {
     this.turn = 'casting';
     this.chains = [];
     for (const team of this.teams) {
-      // Fresh order each round so a different teammate gets the first word.
+      // Fresh order each round so a different teammate gets the first word. Everyone translates once.
       const present = shuffle(team.members.filter((id) => this.players.get(id)?.connected));
       if (present.length === 0) continue;
-      // Chains must end in the source language, so odd teams loop back to their first caster.
-      const len = Math.max(2, present.length + (present.length % 2));
       this.chains.push({
         id: `c${++this.chainSeq}`,
         teamId: team.id,
         element: team.element,
         term: this.drawTerm(),
-        order: Array.from({ length: len }, (_, k) => present[k % present.length]),
+        order: present,
         hops: [],
         status: 'casting',
         hopEndsAt: null,
