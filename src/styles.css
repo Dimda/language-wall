@@ -2089,8 +2089,8 @@ textarea.input-ja:focus {
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   }
   .boss-area .boss {
-    width: 128%;
-    margin: 0 -6% 0 -22%;
+    width: 165%;
+    margin: 0 -30% 0 -35%;
   }
 }
 
