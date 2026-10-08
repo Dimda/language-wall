@@ -327,11 +327,6 @@ export const Boss = memo(function Boss({ hpPct, hitKey }: { hpPct: number; hitKe
           <line key={`d${t.x}`} x1={t.x} y1={t.tip} x2={t.x} y2={t.tip + 14} className="drool" style={{ animationDelay: `${i * 0.7}s`, transformOrigin: `${t.x}px ${t.tip}px` }} />
         ))}
 
-        {/* name carved into the stone */}
-        <text x={W / 2} y={H + 2} className="carved" textAnchor="middle" filter="url(#glow)">
-          言 葉 の 壁
-        </text>
-
         {/* cracks */}
         {(hpPct < 66 || dying) && (
           <polyline className="crack" filter="url(#glow)" points={`${W * 0.06},0 ${W * 0.12},${H * 0.2} ${W * 0.05},${H * 0.38} ${W * 0.14},${H * 0.6}`} />

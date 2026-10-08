@@ -592,13 +592,6 @@ textarea {
 }
 
 
-.carved {
-  fill: #ff3a10;
-  font-family: 'DotGothic16', monospace;
-  font-size: 11px;
-  letter-spacing: 2px;
-  opacity: 0.85;
-}
 
 .ember {
   fill: #ff6a20;
