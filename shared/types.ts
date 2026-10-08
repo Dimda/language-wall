@@ -14,7 +14,7 @@ export const AVATAR_IDS = [
   'tourist',
   'torafan',
   'eikaiwa',
-  'tsukkomi',
+  'sumo',
   'otaku',
   'takoyaki',
   'yukata',

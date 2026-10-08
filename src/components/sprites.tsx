@@ -199,13 +199,18 @@ export const AVATARS: AvatarDef[] = [
     label: 'Backpacker',
     labelJa: '観光客',
     paint: (p) => {
-      // backpack behind the body
-      p.rect(1, 13, 6, 13, '#e8802a').rect(2, 14, 4, 3, '#c86a1a').rect(1, 25, 6, 1, '#a0501a');
+      // big hiking backpack sticking out on the right, sleeping mat rolled on top
+      const PK = '#e8802a';
+      p.rect(16, 11, 7, 16, PK);
+      p.rect(16, 11, 7, 3, '#c86a1a'); // top flap
+      p.rect(18, 15, 1, 11, '#a0501a').rect(21, 15, 1, 11, '#a0501a'); // compression straps
+      p.rect(19, 19, 3, 4, '#d0701f').rect(19, 19, 3, 1, '#a0501a'); // side pocket
+      p.rect(15, 7, 9, 4, '#3a9a4a').rect(15, 8, 9, 1, '#2a7a3a').rect(15, 10, 9, 1, '#2a7a3a'); // sleeping mat
       const o = { skin: '#e8b48a', top: '#3aa0a0', bottom: '#c8b080', shoes: '#6a4a2a', legs: '#e8b48a' };
       body(p, o);
       p.rect(7, 24, 4, 2, '#c8b080').rect(13, 24, 4, 2, '#c8b080');
-      // straps + camera
-      p.rect(8, 16, 1, 7, '#a0501a').rect(15, 16, 1, 7, '#a0501a');
+      // shoulder straps + camera
+      p.rect(8, 16, 1, 7, '#a0501a').rect(15, 16, 2, 7, '#a0501a');
       p.pixels([[10, 16], [11, 17], [12, 17], [13, 16]], '#141414');
       p.rect(10, 18, 4, 3, '#141414').rect(11, 19, 2, 1, '#8aa0c0');
       const H = '#6a3a1a';
@@ -258,22 +263,31 @@ export const AVATARS: AvatarDef[] = [
     },
   },
   {
-    id: 'tsukkomi',
-    label: 'Tsukkomi',
-    labelJa: 'ツッコミ芸人',
+    id: 'sumo',
+    label: 'Sumo Wrestler',
+    labelJa: '力士',
     paint: (p) => {
-      const o = { skin: SKIN, top: '#2a4ab0', bottom: '#1a2a6a', shoes: '#141414' };
-      body(p, o);
-      p.rect(10, 16, 4, 6, '#f4f4f4').rect(11, 16, 2, 1, '#e02a3a').px(10, 16, '#e02a3a').px(13, 16, '#e02a3a');
-      const H = '#2a1a14';
-      p.ellipse(12, 6, 7, 4, H);
-      p.rect(5, 6, 3, 4, H).rect(16, 6, 3, 3, H);
-      p.pixels([[9, 4], [10, 5]], adjust(H, 0.35));
-      face(p, o);
-      p.rect(10, 13, 4, 1, '#a0404a');
-      // ハリセン raised in the right hand
-      for (let i = 0; i < 6; i++) p.rect(17 + (i % 2), 9 + i * 2, 4, 2, i % 2 ? '#d8d8d8' : '#ffffff');
-      p.rect(18, 20, 2, 3, '#8a5a2a');
+      const S = '#f2c09a';
+      const M = '#26285a'; // mawashi
+      // thick legs + bare feet
+      p.rect(6, 23, 5, 5, S).rect(13, 23, 5, 5, S);
+      p.rect(5, 28, 6, 2, adjust(S, -0.12)).rect(13, 28, 6, 2, adjust(S, -0.12));
+      // big round body and arms
+      p.ellipse(12, 19.5, 8.5, 6.5, S);
+      p.ellipse(3.5, 18.5, 2.2, 4.2, S).ellipse(20.5, 18.5, 2.2, 4.2, S);
+      p.pixels([[11, 19], [12, 19]], adjust(S, -0.2)); // belly button
+      p.pixels([[8, 16], [9, 17], [15, 17], [16, 16]], adjust(S, -0.1)); // chest
+      // mawashi belt with front flap and tassels
+      p.rect(4, 22, 16, 3, M).rect(10, 25, 4, 2, M);
+      p.pixels([[9, 25], [9, 26], [14, 25], [14, 26], [11, 27], [12, 27]], '#1a1a40');
+      // head + slicked hair with a topknot
+      p.ellipse(12, 10, 6.5, 6, S);
+      const H = '#141018';
+      p.ellipse(12, 6, 6.5, 3.2, H);
+      p.rect(5, 6, 2, 4, H).rect(17, 6, 2, 4, H);
+      p.ellipse(12, 2.5, 2.2, 1.6, H).px(12, 4, H);
+      face(p, { skin: S, top: M, bottom: M, shoes: S, blush: '#f09a8a' });
+      p.pixels([[7, 9], [8, 9], [15, 9], [16, 9]], H); // stern brows
     },
   },
   {
