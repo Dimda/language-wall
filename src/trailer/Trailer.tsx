@@ -213,8 +213,8 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
       {/* 1. intro */}
       <section className={`tr-scene tr-intro ${between(t, INTRO, SKY + 600) ? 'show' : ''}`}>
         {t >= 400 && <p className="tr-line big"><Typewriter text="関西。" ms={120} /></p>}
-        {t >= 1500 && <p className="tr-line"><Typewriter text="Japanese devs. English devs." ms={40} /></p>}
-        {t >= 3000 && <p className="tr-line"><Typewriter text="Same bugs. Different words." ms={40} /></p>}
+        {t >= 1500 && <p className="tr-line"><Typewriter text="Japanese speakers. English speakers." ms={40} /></p>}
+        {t >= 3000 && <p className="tr-line"><Typewriter text="Same feelings. Different words." ms={40} /></p>}
       </section>
 
       {/* 2–3. skyline + boss reveal */}
@@ -261,7 +261,7 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
           {t >= CHAIN + 600 && (
             <div className="tr-hop">
               <span className="who">お題 JA</span>
-              <span className="said term">「炎上」</span>
+              <span className="said term">「仲直り」</span>
             </div>
           )}
           {t >= CHAIN + 1600 && (
@@ -270,7 +270,7 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
                 <Sprite avatar="obachan" size={44} /> Aiko → EN
               </span>
               <span className="said">
-                「<Typewriter text="when the whole internet gets angry at you" ms={34} />」
+                「<Typewriter text="when two friends stop fighting and are friends again" ms={30} />」
               </span>
             </div>
           )}
@@ -280,7 +280,7 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
                 <Sprite avatar="gaijin" size={44} /> Sam → JA
               </span>
               <span className="said">
-                「<Typewriter text="大炎上" ms={160} />」
+                「<Typewriter text="仲良しに戻る" ms={110} />」
               </span>
             </div>
           )}
