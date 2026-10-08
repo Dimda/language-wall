@@ -401,16 +401,28 @@ export const AVATARS: AvatarDef[] = [
 
 export const avatarDef = (id: AvatarId): AvatarDef => AVATARS.find((a) => a.id === id) ?? AVATARS[0];
 
-/** Paint once per avatar, then merge horizontal runs of the same color into single rects. */
-const RENDERED = new Map<AvatarId, { x: number; y: number; w: number; c: string }[]>();
+type Run = { x: number; y: number; w: number; c: string };
 
-function runsFor(id: AvatarId) {
-  const cached = RENDERED.get(id);
-  if (cached) return cached;
-  const p = new Painter();
-  avatarDef(id).paint(p);
-  const grid = finish(p);
-  const runs: { x: number; y: number; w: number; c: string }[] = [];
+/** First leg row in the shared body; everything from here down is "legs" for the walk cycle. */
+const LEG_TOP = 24;
+const LIFT = 2;
+
+/** Walk frame: lift one half (left or right leg) of everything below LEG_TOP by LIFT rows. */
+function liftLeg(g: Grid, side: 'left' | 'right'): Grid {
+  const out = g.map((row) => [...row]);
+  const [x0, x1] = side === 'left' ? [0, GW / 2] : [GW / 2, GW];
+  for (let x = x0; x < x1; x++) {
+    for (let y = LEG_TOP - LIFT; y < GH; y++) {
+      const below = y + LIFT < GH ? g[y + LIFT][x] : null;
+      // Leg pixels move up; the torso stays visible wherever the raised leg doesn't cover it.
+      out[y][x] = below ?? (y < LEG_TOP ? g[y][x] : null);
+    }
+  }
+  return out;
+}
+
+function toRuns(grid: Grid): Run[] {
+  const runs: Run[] = [];
   grid.forEach((row, y) => {
     let x = 0;
     while (x < GW) {
@@ -425,17 +437,49 @@ function runsFor(id: AvatarId) {
       x += w;
     }
   });
-  RENDERED.set(id, runs);
   return runs;
 }
 
-export const Sprite = memo(function Sprite({ avatar, size = 64 }: { avatar: AvatarId; size?: number }) {
+/** Paint once per avatar → [standing, left leg up, right leg up], each merged into horizontal runs. */
+const RENDERED = new Map<AvatarId, Run[][]>();
+
+function framesFor(id: AvatarId): Run[][] {
+  const cached = RENDERED.get(id);
+  if (cached) return cached;
+  const p = new Painter();
+  avatarDef(id).paint(p);
+  const frames = [p.g, liftLeg(p.g, 'left'), liftLeg(p.g, 'right')].map((g) => {
+    const fp = new Painter();
+    fp.g = g;
+    return toRuns(finish(fp));
+  });
+  RENDERED.set(id, frames);
+  return frames;
+}
+
+const Rects = ({ runs }: { runs: Run[] }) => (
+  <>
+    {runs.map((r) => (
+      <rect key={`${r.x},${r.y}`} x={r.x} y={r.y} width={r.w + 0.02} height="1.02" fill={r.c} />
+    ))}
+  </>
+);
+
+/** `walk` cycles stand → left step → stand → right step (timing lives in CSS: .wf0/.wf1/.wf2). */
+export const Sprite = memo(function Sprite({ avatar, size = 64, walk = false }: { avatar: AvatarId; size?: number; walk?: boolean }) {
   const def = avatarDef(avatar);
+  const frames = framesFor(def.id);
   return (
     <svg className="sprite" viewBox={`0 0 ${GW} ${GH}`} width={size * 0.75} height={size} shapeRendering="crispEdges" aria-label={def.label}>
-      {runsFor(def.id).map((r) => (
-        <rect key={`${r.x},${r.y}`} x={r.x} y={r.y} width={r.w + 0.02} height="1.02" fill={r.c} />
-      ))}
+      {walk ? (
+        frames.map((runs, i) => (
+          <g key={i} className={`wf wf${i}`}>
+            <Rects runs={runs} />
+          </g>
+        ))
+      ) : (
+        <Rects runs={frames[0]} />
+      )}
     </svg>
   );
 });

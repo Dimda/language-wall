@@ -2139,3 +2139,79 @@ textarea.input-ja:focus {
     transform-origin: 30% 60%;
   }
 }
+
+/* ── walk cycle: stand → left step → stand → right step, leaning toward the wall ── */
+
+.wf {
+  opacity: 0;
+  animation: 0.56s steps(1) infinite;
+  animation-delay: var(--wd, 0ms);
+}
+
+.wf0 {
+  animation-name: wf0;
+}
+.wf1 {
+  animation-name: wf1;
+}
+.wf2 {
+  animation-name: wf2;
+}
+
+@keyframes wf0 {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  25%,
+  75% {
+    opacity: 0;
+  }
+}
+
+@keyframes wf1 {
+  0%,
+  50% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+}
+
+@keyframes wf2 {
+  0%,
+  50% {
+    opacity: 0;
+  }
+  75% {
+    opacity: 1;
+  }
+}
+
+.fighter.walking .fighter-body {
+  transform-origin: 50% 100%;
+  animation: walk-bob 0.56s steps(1) infinite;
+  animation-delay: var(--wd, 0ms);
+}
+
+@keyframes walk-bob {
+  0%,
+  50% {
+    transform: rotate(-3deg);
+  }
+  25%,
+  75% {
+    transform: translateY(-2px) rotate(-4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wf,
+  .fighter.walking .fighter-body {
+    animation: none;
+  }
+  .wf0 {
+    opacity: 1;
+  }
+}
