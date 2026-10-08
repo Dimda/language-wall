@@ -33,6 +33,8 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
   const now = useNow(200);
   const taskKey = task ? `${task.chainId}:${task.hopIndex}` : '';
   const [error, setError] = useState<Rejection | null>(null);
+  /** True while an IME is composing (e.g. romaji → kana), so half-typed input isn't judged. */
+  const [composing, setComposing] = useState(false);
   const { rejection } = useGame();
 
   // The server can refuse an answer too (same rule); show its reason the same way.
@@ -90,6 +92,9 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
     socket.emit('submit', { chainId: task.chainId, text });
   };
 
+  // Live heads-up while typing (amber); pressing SEND with a problem shows the red error instead.
+  const warning = !composing && text.trim() ? checkAnswer(task.prevText, text, task.toLang) : null;
+
   const isFirst = task.hopIndex === 0;
   const left = Math.max(0, Math.ceil((task.endsAt - now) / 1000));
   const el = ELEMENT_LABEL[task.element];
@@ -118,7 +123,9 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
       </div>
       <textarea
         ref={inputRef}
-        className={`input-${task.toLang} ${error ? 'input-error' : ''}`}
+        className={`input-${task.toLang} ${error ? 'input-error' : warning ? 'input-warning' : ''}`}
+        onCompositionStart={() => setComposing(true)}
+        onCompositionEnd={() => setComposing(false)}
         rows={2}
         maxLength={200}
         value={text}
@@ -131,10 +138,16 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
           }
         }}
       />
-      {error && (
+      {error ? (
         <p key={JSON.stringify(error)} className="answer-error" role="alert">
           ✕ {error.ja} / {error.en}
         </p>
+      ) : (
+        warning && (
+          <p className="answer-warning" role="status">
+            ⚠ {warning.ja} / {warning.en}
+          </p>
+        )
       )}
       <div className="task-foot">
         <small>Enterで送信 / Press Enter to send</small>

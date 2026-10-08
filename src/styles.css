@@ -2339,6 +2339,20 @@ textarea.input-ja:focus {
   animation: pop 0.25s steps(3);
 }
 
+.answer-warning {
+  margin: 0;
+  padding: 4px 8px;
+  border: 2px solid var(--gold);
+  border-radius: 4px;
+  background: rgba(255, 216, 74, 0.12);
+  color: #ffe9a0;
+  font-size: 14px;
+}
+
+textarea.input-warning {
+  border-color: var(--gold);
+}
+
 textarea.input-error {
   border-color: var(--red);
   animation: input-shake 0.3s steps(6);
