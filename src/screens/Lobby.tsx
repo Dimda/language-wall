@@ -72,16 +72,16 @@ export function Lobby({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic |
             </div>
           </div>
         ) : (
-          <p className="blink">{isScreen ? `${players.length} hero(es) ready` : 'Waiting for the host to start…'}</p>
+          <p className="blink">{isScreen ? `${players.length}人 準備OK / ${players.length} ready` : 'ホストの開始を待っています… / Waiting for the host to start…'}</p>
         )}
       </div>
       {me?.isHost && !isScreen && (
         <details className="hint">
-          <summary>Show join QR</summary>
+          <summary>参加用QRコード / Show join QR</summary>
           <JoinQr size={140} />
         </details>
       )}
-      <p className="hint">Explain it, don't translate it word for word. / 直訳じゃなく、説明しよう。</p>
+      <p className="hint">届いた言葉を、もう一つの言語に翻訳しよう！ / Translate the word you receive into the other language!</p>
     </div>
   );
 }

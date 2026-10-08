@@ -55,10 +55,10 @@ export function End({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic | n
         </p>
         {me?.isHost ? (
           <button type="button" className="btn primary" onClick={() => socket.emit('restart')}>
-            ▶ PLAY AGAIN
+            ▶ もう一回 / PLAY AGAIN
           </button>
         ) : (
-          <p className="blink">Waiting for the host…</p>
+          <p className="blink">ホストを待っています… / Waiting for the host…</p>
         )}
       </div>
     </div>

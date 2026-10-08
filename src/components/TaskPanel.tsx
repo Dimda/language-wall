@@ -6,6 +6,22 @@ import { ELEMENT_COLOR, ELEMENT_LABEL } from './sprites';
 import { Typewriter, useNow } from './ui';
 
 const LANG_LABEL: Record<Lang, string> = { ja: '日本語', en: 'English' };
+
+/** Everything the player needs to know about the target language, in both languages. */
+const TARGET: Record<Lang, { big: string; ja: string; en: string; placeholder: string }> = {
+  en: {
+    big: 'ENGLISH',
+    ja: '英語に翻訳しよう！',
+    en: 'Translate into English',
+    placeholder: 'Type it in English… / 英語で入力…',
+  },
+  ja: {
+    big: '日本語',
+    ja: '日本語に翻訳しよう！',
+    en: 'Translate into Japanese',
+    placeholder: '日本語で入力… / Type it in Japanese…',
+  },
+};
 const TYPING_IDLE_MS = 2500;
 
 export function TaskPanel({ task, status }: { task: Task | null; status: string }) {
@@ -58,30 +74,36 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
   const isFirst = task.hopIndex === 0;
   const left = Math.max(0, Math.ceil((task.endsAt - now) / 1000));
   const el = ELEMENT_LABEL[task.element];
+  const target = TARGET[task.toLang];
 
   return (
     <form className="window task" onSubmit={submit} style={{ '--el': ELEMENT_COLOR[task.element] } as React.CSSProperties}>
       <div className="task-head">
         <span className="el-name">
-          {el.icon} {el.en} · HOP {task.hopIndex + 1}/{task.hopCount}
+          {el.icon} {el.ja} {el.en} · HOP {task.hopIndex + 1}/{task.hopCount}
         </span>
         <span className={`task-timer ${left <= 10 ? 'danger' : ''}`}>⏳ {left}s</span>
       </div>
-      <p className="task-label">
-        {isFirst ? 'Your word / お題:' : 'You received / 届いた呪文:'}{' '}
-        <span className="langs">
-          {LANG_LABEL[task.fromLang]} → <b>{LANG_LABEL[task.toLang]}</b>
-        </span>
-      </p>
+      <p className="task-label">{isFirst ? 'お題 / Your word' : '届いた言葉 / You received'}</p>
       <p className="task-prev">
         「<Typewriter text={task.prevText} ms={22} />」
       </p>
+      <div className={`target target-${task.toLang}`}>
+        <span className="target-from">
+          {LANG_LABEL[task.fromLang]} →
+        </span>
+        <b>{target.big}</b>
+        <small>
+          {target.ja} / {target.en}
+        </small>
+      </div>
       <textarea
         ref={inputRef}
+        className={`input-${task.toLang}`}
         rows={2}
         maxLength={200}
         value={text}
-        placeholder={task.toLang === 'ja' ? '日本語で説明してね…' : 'Explain it in English…'}
+        placeholder={target.placeholder}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -91,9 +113,9 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
         }}
       />
       <div className="task-foot">
-        <small>Explain it, don't translate it word for word.</small>
+        <small>Enterで送信 / Press Enter to send</small>
         <button className="btn primary" type="submit" disabled={!text.trim()}>
-          ✦ CAST
+          ✦ 送る / SEND
         </button>
       </div>
     </form>

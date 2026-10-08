@@ -311,7 +311,7 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
             </div>
           )}
         </div>
-        <p className="tr-caption bottom">Explain it — don't translate it word for word. / 直訳じゃなく、説明しよう。</p>
+        <p className="tr-caption bottom">言葉をつないで翻訳しよう！ / Translate it across languages!</p>
       </section>
 
       {/* 5–6. spells + boss death */}
