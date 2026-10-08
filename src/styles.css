@@ -2071,6 +2071,62 @@ textarea.input-ja:focus {
     min-height: clamp(340px, 52vh, 680px);
   }
   .boss-area .boss {
-    width: min(820px, 100%);
+    width: 100%;
+  }
+}
+
+/* ── HUGE boss: most of the stage, wings spilling past the edges ── */
+
+.boss-area {
+  overflow: visible;
+}
+
+@media (min-width: 721px) {
+  .stage {
+    grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+  }
+  .stage.many-teams {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+  .boss-area .boss {
+    width: 128%;
+    margin: 0 -6% 0 -22%;
+  }
+}
+
+@media (max-width: 720px) {
+  .boss-area .boss {
+    width: 135%;
+    margin: 0 -17.5%;
+  }
+}
+
+/* Long chains: the journey window never outgrows the stage; the newest lines stay visible. */
+.resolve {
+  max-height: calc(100% - 20px);
+  display: flex;
+  flex-direction: column;
+}
+
+.resolve .journey {
+  min-height: 0;
+  overflow: hidden;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .resolve {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  .resolve .journey .said {
+    font-size: 13px;
+  }
+  .resolve .journey-term .said {
+    font-size: 18px;
+  }
+  .resolve .journey li {
+    grid-template-columns: minmax(64px, auto) 1fr;
+    gap: 6px;
   }
 }
