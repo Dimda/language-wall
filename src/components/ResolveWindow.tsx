@@ -42,9 +42,16 @@ export function ResolveWindow({ timeline, elapsed }: { timeline: ResolveTimeline
       <div className="resolve-head">
         <span>
           SPELL {timeline.index + 1}/{timeline.total}
+          {chain.teamName && <> · {chain.teamName}</>}
         </span>
         <span className="el-name">
           {el.icon} {el.ja} {el.en}
+          {chain.multiplier > 1 && (
+            <b className="chain-bonus">
+              {' '}
+              {chain.hops.length}-HOP ×{chain.multiplier}
+            </b>
+          )}
         </span>
       </div>
 

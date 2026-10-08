@@ -177,6 +177,15 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
   const spellStage = resolving ? stageAt(resolving.timeline, elapsed) : null;
   const channeling = resolving && (spellStage === 'judge' || spellStage === 'spell') ? new Set(resolving.timeline.chain.casters) : null;
 
+  const renderFighter = (p: PlayerPublic) => {
+    const r = roles.get(p.id);
+    const role: FighterRole = channeling?.has(p.id) ? 'channel' : turn === 'casting' ? (r?.role ?? 'idle') : 'idle';
+    const element = channeling?.has(p.id) ? resolving!.timeline.chain.element : (r?.element ?? null);
+    return (
+      <Fighter key={p.id} player={p} role={role} element={element} size={spriteSize} isMe={p.id === me?.id} hurtKey={hurtKey} />
+    );
+  };
+
   const myRole = me ? roles.get(me.id) : undefined;
   const status =
     turn === 'resolving'
@@ -212,22 +221,23 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
           </div>
 
           <div className="party-area">
-            {players.map((p) => {
-              const r = roles.get(p.id);
-              const role: FighterRole = channeling?.has(p.id) ? 'channel' : turn === 'casting' ? (r?.role ?? 'idle') : 'idle';
-              const element = channeling?.has(p.id) ? resolving!.timeline.chain.element : (r?.element ?? null);
+            {snapshot.teams.map((team) => {
+              const members = players.filter((p) => team.members.includes(p.id));
+              if (members.length === 0) return null;
               return (
-                <Fighter
-                  key={p.id}
-                  player={p}
-                  role={role}
-                  element={element}
-                  size={spriteSize}
-                  isMe={p.id === me?.id}
-                  hurtKey={hurtKey}
-                />
+                <div
+                  key={team.id}
+                  className={`team-group ${me && team.members.includes(me.id) ? 'mine' : ''}`}
+                  style={{ '--el': ELEMENT_COLOR[team.element] } as React.CSSProperties}
+                >
+                  <span className="team-label">
+                    {ELEMENT_LABEL[team.element].icon} {team.name}
+                  </span>
+                  <div className="team-members">{members.map(renderFighter)}</div>
+                </div>
               );
             })}
+            {players.filter((p) => !snapshot.teams.some((t) => t.members.includes(p.id))).map(renderFighter)}
           </div>
 
           <canvas ref={canvasRef} className="fx" />
@@ -271,7 +281,7 @@ function CastStatus({ snapshot }: { snapshot: Snapshot }) {
         return (
           <div key={c.id} className={`cast-row status-${c.status}`} style={{ '--el': ELEMENT_COLOR[c.element] } as React.CSSProperties}>
             <span className="el-name">
-              {el.icon} {el.en}
+              {el.icon} {snapshot.teams.find((t) => t.id === c.teamId)?.name ?? el.en}
             </span>
             <span className="cast-order">
               {c.order.map((pid, i) => (

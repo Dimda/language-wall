@@ -5,6 +5,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
-    proxy: { '/socket.io': { target: `http://127.0.0.1:${process.env.PORT ?? 3210}`, ws: true } },
+    proxy: { '/socket.io': { target: `http://127.0.0.1:${process.env.API_PORT ?? 3210}`, ws: true } },
   },
 });

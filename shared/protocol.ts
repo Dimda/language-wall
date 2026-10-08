@@ -3,7 +3,7 @@ import type { AvatarId, ResolveTimeline, Snapshot, Task } from './types';
 export interface ClientToServer {
   hello: (payload: { playerId: string }) => void;
   join: (payload: { name: string; avatar: AvatarId }) => void;
-  start: (payload: { hopCount: number }) => void;
+  start: () => void;
   submit: (payload: { chainId: string; text: string }) => void;
   typing: (payload: { typing: boolean }) => void;
   restart: () => void;

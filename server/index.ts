@@ -6,8 +6,9 @@ import { Server } from 'socket.io';
 import type { ClientToServer, ServerToClient } from '../shared/protocol';
 import { Game } from './game';
 
-const PORT = Number(process.env.PORT ?? 3210);
 const prod = process.env.NODE_ENV === 'production';
+// In production the host (Render) assigns PORT. In dev, PORT belongs to Vite, so the API uses API_PORT.
+const PORT = Number((prod ? process.env.PORT : process.env.API_PORT) ?? 3210);
 
 const app = express();
 const http = createServer(app);
@@ -56,9 +57,9 @@ io.on('connection', (socket) => {
     if (pid) game.setTyping(pid, !!typing);
   });
 
-  socket.on('start', ({ hopCount }) => {
+  socket.on('start', () => {
     const pid = id();
-    if (pid) game.start(pid, Number(hopCount));
+    if (pid) game.start(pid);
   });
 
   socket.on('submit', ({ chainId, text }) => {

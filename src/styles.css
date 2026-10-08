@@ -1839,3 +1839,55 @@ details.hint summary {
     animation: none;
   }
 }
+
+/* ── teams ───────────────────────────────── */
+
+.team-preview {
+  margin: 0;
+  text-align: center;
+  color: var(--gold);
+  font-size: 15px;
+}
+
+.team-preview small {
+  display: block;
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.host-controls {
+  justify-content: flex-end;
+}
+
+.team-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 6px;
+  border: 2px solid color-mix(in srgb, var(--el) 60%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--el) 10%, rgba(0, 0, 0, 0.35));
+}
+
+.team-group.mine {
+  border-color: var(--el);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--el) 60%, transparent);
+}
+
+.team-label {
+  font-size: 12px;
+  color: var(--el);
+  text-shadow: 1px 1px 0 #000;
+  white-space: nowrap;
+}
+
+.team-members {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.chain-bonus {
+  color: var(--gold);
+}

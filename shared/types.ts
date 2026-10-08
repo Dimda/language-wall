@@ -53,9 +53,19 @@ export interface Hop {
   output?: string;
 }
 
+/** A team of up to 5 that casts one chain together each round; its element is its colour. */
+export interface TeamPublic {
+  id: string;
+  name: string;
+  nameEn: string;
+  element: Element;
+  members: string[];
+}
+
 /** What everyone may see about an in-flight chain (no texts). */
 export interface ChainPublic {
   id: string;
+  teamId: string;
   element: Element;
   /** Player id for each hop, in order (a player can appear twice in small parties). */
   order: string[];
@@ -74,6 +84,8 @@ export interface JudgeResult {
 
 export interface ResolvedChain {
   id: string;
+  teamId: string;
+  teamName: string;
   element: Element;
   term: Term;
   hops: Hop[];
@@ -82,6 +94,8 @@ export interface ResolvedChain {
   final: string;
   judge: JudgeResult;
   damage: number;
+  /** Damage multiplier from chain length (hops / 2). */
+  multiplier: number;
   tier: Tier;
   /** True when the chain broke (timeout / disconnect) before finishing. */
   broken: boolean;
@@ -111,7 +125,7 @@ export interface Snapshot {
   turn: Turn;
   round: number;
   players: PlayerPublic[];
-  hopCount: number;
+  teams: TeamPublic[];
   boss: { hp: number; maxHp: number };
   party: { hp: number; maxHp: number };
   chains: ChainPublic[];

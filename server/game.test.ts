@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ResolveTimeline, Snapshot, Task } from '../shared/types';
 import { Game, type Outbox } from './game';
+import { chainMultiplier, teamSizes } from '../shared/teams';
 import { damageFrom, mockJudge } from './judge';
 
 const FAST = {
@@ -38,7 +39,7 @@ describe('rounds', () => {
     const { game, tasks, resolves, last } = setup();
     game.join('a', 'Aiko', 'obachan');
     game.join('b', 'Sam', 'gaijin');
-    game.start('a', 2);
+    game.start('a');
 
     const chain = last().chains[0];
     expect(last().chains).toHaveLength(1);
@@ -68,7 +69,7 @@ describe('rounds', () => {
     const { game, tasks, resolves, last } = setup();
     game.join('a', 'A', 'ninja');
     game.join('b', 'B', 'torafan');
-    game.start('a', 2);
+    game.start('a');
     const caster = last().chains[0].order[0];
     expect(tasks.get(caster)).toBeTruthy();
     game.disconnect(caster);
@@ -80,17 +81,72 @@ describe('rounds', () => {
   it('fizzles on hop timeout', async () => {
     const { game, last } = setup({ hopMs: 20 });
     game.join('a', 'A', 'maiko');
-    game.start('a', 2);
+    game.start('a');
     await expect.poll(() => last().chains[0]?.status ?? last().turn).not.toBe('casting');
   });
 
   it('a solo player casts both hops', () => {
     const { game, tasks, last } = setup();
     game.join('a', 'A', 'shika');
-    game.start('a', 2);
+    game.start('a');
     expect(last().chains[0].order).toEqual(['a', 'a']);
     game.submit('a', tasks.get('a')!.chainId, 'x');
     expect(tasks.get('a')!.hopIndex).toBe(1);
+  });
+});
+
+describe('teams', () => {
+  it('splits into the fewest teams of at most 5, as evenly as possible', () => {
+    expect(teamSizes(1)).toEqual([1]);
+    expect(teamSizes(5)).toEqual([5]);
+    expect(teamSizes(6)).toEqual([3, 3]);
+    expect(teamSizes(11)).toEqual([4, 4, 3]);
+    expect(teamSizes(21)).toEqual([5, 4, 4, 4, 4]);
+    for (let n = 1; n <= 60; n++) {
+      const sizes = teamSizes(n);
+      expect(sizes.reduce((a, b) => a + b, 0)).toBe(n);
+      expect(Math.max(...sizes)).toBeLessThanOrEqual(5);
+      expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('each team casts one chain with every connected member', () => {
+    const { game, last } = setup();
+    for (let i = 0; i < 7; i++) game.join(`p${i}`, `P${i}`, 'obachan');
+    game.start('p0');
+    const { teams, chains } = last();
+    expect(teams.map((t) => t.members.length).sort()).toEqual([3, 4]);
+    expect(chains).toHaveLength(2);
+    for (const c of chains) {
+      const team = teams.find((t) => t.id === c.teamId)!;
+      expect(new Set(c.order)).toEqual(new Set(team.members));
+      expect(c.order.length % 2).toBe(0);
+      expect(c.element).toBe(team.element);
+    }
+  });
+
+  it('late joiners go to the smallest team', () => {
+    const { game, last } = setup();
+    for (let i = 0; i < 7; i++) game.join(`p${i}`, `P${i}`, 'obachan');
+    game.start('p0');
+    game.join('late', 'Late', 'gaijin');
+    const team = last().teams.find((t) => t.members.includes('late'))!;
+    expect(team.members).toHaveLength(4);
+  });
+
+  it('longer chains multiply damage', async () => {
+    expect(chainMultiplier(2)).toBe(1);
+    expect(chainMultiplier(4)).toBe(2);
+    expect(chainMultiplier(6)).toBe(3);
+    const { game, tasks, resolves, last } = setup();
+    for (let i = 0; i < 4; i++) game.join(`p${i}`, `P${i}`, 'obachan');
+    game.start('p0');
+    const chain = last().chains[0];
+    for (const pid of chain.order) game.submit(pid, tasks.get(pid)!.chainId, 'same');
+    await expect.poll(() => resolves.length, { timeout: 5000 }).toBe(1);
+    const spell = resolves[0].chain;
+    expect(spell.multiplier).toBe(2);
+    expect(spell.damage).toBe(Math.round(damageFrom(spell.judge).damage * 2));
   });
 });
 
@@ -103,7 +159,7 @@ describe('boss death', () => {
       { judge: async () => ({ exact: 1, same_concept: 0, related: 0, lost: 0 }), timing: { ...FAST, bossDeathMs: 60 } },
     );
     game.join('a', 'A', 'obachan');
-    game.start('a', 2);
+    game.start('a');
     game.submit('a', tasks.get('a')!.chainId, 'x');
     game.submit('a', tasks.get('a')!.chainId, 'x');
     await expect.poll(() => snaps.some((s) => s.phase === 'battle' && s.boss.hp === 0), { timeout: 5000 }).toBe(true);

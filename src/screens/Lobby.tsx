@@ -1,5 +1,6 @@
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
+import { MAX_TEAM_SIZE, teamSizes } from '../../shared/teams';
 import type { PlayerPublic, Snapshot } from '../../shared/types';
 import { audio } from '../audio';
 import { Sprite } from '../components/sprites';
@@ -21,8 +22,8 @@ function JoinQr({ size }: { size: number }) {
 }
 
 export function Lobby({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic | null }) {
-  const [hopCount, setHopCount] = useState(snapshot.hopCount);
   const players = snapshot.players.filter((p) => p.connected);
+  const sizes = teamSizes(players.length);
 
   return (
     <div className={`screen center lobby-screen ${isScreen ? 'projector' : ''}`}>
@@ -44,24 +45,14 @@ export function Lobby({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic |
             </div>
           ))}
         </div>
+        {sizes.length > 0 && (
+          <p className="team-preview">
+            {sizes.length === 1 ? '1 team' : `${sizes.length} teams`} of {sizes.join(' · ')} — formed when the battle starts
+            <small>チームはバトル開始時に自動で決まります（最大{MAX_TEAM_SIZE}人）</small>
+          </p>
+        )}
         {me?.isHost ? (
           <div className="host-controls">
-            <div className="choices row">
-              <span>HOPS</span>
-              {[2, 4].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className={`choice small ${hopCount === n ? 'selected' : ''}`}
-                  onClick={() => {
-                    audio.sfx('select');
-                    setHopCount(n);
-                  }}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
             <div className="row">
               {snapshot.devMode && (
                 <button type="button" className="btn" onClick={() => socket.emit('addBot')}>
@@ -73,7 +64,7 @@ export function Lobby({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic |
                 className="btn primary"
                 onClick={() => {
                   audio.sfx('submit');
-                  socket.emit('start', { hopCount });
+                  socket.emit('start');
                 }}
               >
                 ▶ FIGHT!

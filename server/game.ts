@@ -1,3 +1,4 @@
+import { chainMultiplier, MAX_TEAM_SIZE, teamName, teamSizes } from '../shared/teams';
 import { WORDS } from '../shared/words';
 import {
   AVATAR_IDS,
@@ -15,6 +16,7 @@ import {
   type ResolveTimeline,
   type Snapshot,
   type Task,
+  type TeamPublic,
   type Term,
   type Turn,
 } from '../shared/types';
@@ -76,8 +78,17 @@ interface Player {
   typing: boolean;
 }
 
+interface Team {
+  id: string;
+  name: string;
+  nameEn: string;
+  element: Element;
+  members: string[];
+}
+
 interface Chain {
   id: string;
+  teamId: string;
   element: Element;
   term: Term;
   order: string[];
@@ -95,12 +106,12 @@ export class Game {
   phase: Phase = 'lobby';
   turn: Turn = 'casting';
   round = 0;
-  hopCount = 2;
   bossHp = 0;
   bossMaxHp = 0;
   partyHp = PARTY_MAX_HP;
 
   private players = new Map<string, Player>();
+  private teams: Team[] = [];
   private chains: Chain[] = [];
   private log: LogEntry[] = [];
   private logSeq = 0;
@@ -146,8 +157,9 @@ export class Game {
         joinedAt: this.joinSeq++,
         typing: false,
       });
+      const team = this.phase === 'battle' ? this.placeInTeam(id) : null;
       this.addLog(
-        this.phase === 'battle' ? `${clean} rushes in! (joins next round)` : `${clean} joined the party!`,
+        team ? `${clean} rushes in and joins ${team.nameEn}! (casts next round)` : `${clean} joined the party!`,
         'info',
       );
     }
@@ -197,7 +209,8 @@ export class Game {
       joinedAt: this.joinSeq++,
       typing: false,
     });
-    this.addLog(`${name} joined the party!`, 'info');
+    const team = this.phase === 'battle' ? this.placeInTeam(id) : null;
+    this.addLog(team ? `${name} joins ${team.nameEn}!` : `${name} joined the party!`, 'info');
     this.broadcast();
   }
 
@@ -209,11 +222,11 @@ export class Game {
 
   // ── lifecycle ────────────────────────────────────────────
 
-  start(byId: string, hopCount: number): void {
+  start(byId: string): void {
     if (this.phase !== 'lobby' || byId !== this.hostId()) return;
     const active = this.activePlayers();
     if (active.length === 0) return;
-    this.hopCount = hopCount === 4 ? 4 : 2;
+    this.formTeams(active);
     this.phase = 'battle';
     this.round = 0;
     this.bossMaxHp = BOSS_HP_PER_PLAYER * active.length;
@@ -221,6 +234,7 @@ export class Game {
     this.partyHp = PARTY_MAX_HP;
     this.log = [];
     this.addLog(`${this.boss.name} blocks the way! Build the bridge!`, 'system');
+    this.addLog(`${this.teams.length} team${this.teams.length > 1 ? 's' : ''} formed: ${this.teams.map((t) => `${t.nameEn} (${t.members.length})`).join(', ')}`, 'info');
     this.startRound();
   }
 
@@ -229,6 +243,7 @@ export class Game {
     this.stopAll();
     for (const [id, p] of this.players) if (!p.connected) this.players.delete(id);
     this.chains = [];
+    this.teams = [];
     this.log = [];
     this.round = 0;
     this.phase = 'lobby';
@@ -267,27 +282,58 @@ export class Game {
 
   // ── rounds ───────────────────────────────────────────────
 
+  /** Split players into the fewest teams of ≤ MAX_TEAM_SIZE with sizes differing by at most one. */
+  private formTeams(players: Player[]): void {
+    const pool = shuffle(players);
+    let next = 0;
+    this.teams = teamSizes(pool.length).map((size, i) => {
+      const name = teamName(i);
+      return {
+        id: `t${i + 1}`,
+        name: name.ja,
+        nameEn: name.en,
+        element: ELEMENTS[i % ELEMENTS.length],
+        members: pool.slice(next, (next += size)).map((p) => p.id),
+      };
+    });
+  }
+
+  /** Late joiner: smallest team with room, or a new team when every team is full. */
+  private placeInTeam(playerId: string): Team {
+    const connected = (t: Team) => t.members.filter((id) => this.players.get(id)?.connected).length;
+    const open = this.teams.filter((t) => connected(t) < MAX_TEAM_SIZE).sort((a, b) => connected(a) - connected(b));
+    let team = open[0];
+    if (!team) {
+      const i = this.teams.length;
+      const name = teamName(i);
+      team = { id: `t${i + 1}`, name: name.ja, nameEn: name.en, element: ELEMENTS[i % ELEMENTS.length], members: [] };
+      this.teams.push(team);
+    }
+    team.members.push(playerId);
+    return team;
+  }
+
   private startRound(): void {
     this.round++;
     this.turn = 'casting';
-    const active = shuffle(this.activePlayers());
-    const groupCount = Math.max(1, Math.floor(active.length / this.hopCount));
-    const groups: Player[][] = Array.from({ length: groupCount }, () => []);
-    active.forEach((p, i) => groups[i % groupCount].push(p));
-
-    this.chains = groups.map((group, i) => {
-      const len = Math.max(this.hopCount, group.length + (group.length % 2));
-      const order = Array.from({ length: len }, (_, k) => group[k % group.length].id);
-      return {
+    this.chains = [];
+    for (const team of this.teams) {
+      // Fresh order each round so a different teammate gets the first word.
+      const present = shuffle(team.members.filter((id) => this.players.get(id)?.connected));
+      if (present.length === 0) continue;
+      // Chains must end in the source language, so odd teams loop back to their first caster.
+      const len = Math.max(2, present.length + (present.length % 2));
+      this.chains.push({
         id: `c${++this.chainSeq}`,
-        element: ELEMENTS[(this.round + i) % ELEMENTS.length],
+        teamId: team.id,
+        element: team.element,
         term: this.drawTerm(),
-        order,
+        order: Array.from({ length: len }, (_, k) => present[k % present.length]),
         hops: [],
-        status: 'casting' as const,
+        status: 'casting',
         hopEndsAt: null,
-      };
-    });
+      });
+    }
     this.addLog(`— ROUND ${this.round} — Cast your spells!`, 'system');
     for (const c of this.chains) this.startHop(c);
     this.broadcast();
@@ -405,29 +451,35 @@ export class Game {
     const final = c.hops[c.hops.length - 1]?.output ?? '';
     const broken = c.status !== 'done';
     const result = broken ? BROKEN : await this.judge(c.term.text, final, c.term.lang);
-    const { damage, tier } = broken ? { damage: 0, tier: 'fizzle' as const } : damageFrom(result);
+    const multiplier = chainMultiplier(c.order.length);
+    const base = broken ? { damage: 0, tier: 'fizzle' as const } : damageFrom(result);
+    const team = this.teams.find((t) => t.id === c.teamId);
     return {
       id: c.id,
+      teamId: c.teamId,
+      teamName: team?.nameEn ?? '',
       element: c.element,
       term: c.term,
       hops: c.hops,
       casters: [...new Set(c.order)],
       final,
       judge: result,
-      damage,
-      tier,
+      damage: Math.round(base.damage * multiplier),
+      multiplier,
+      tier: base.tier,
       broken,
     };
   }
 
   private impact(spell: ResolvedChain): void {
-    const names = spell.hops.map((h) => h.playerName).join(' → ') || '???';
+    const names = spell.teamName || spell.hops.map((h) => h.playerName).join(' → ') || '???';
     if (spell.tier === 'fizzle') {
       this.addLog(`${names}: ${spell.term.text}… lost in translation. The spell fizzles!`, 'fizzle');
     } else {
       this.bossHp = Math.max(0, this.bossHp - spell.damage);
+      const bonus = spell.multiplier > 1 ? ` ${spell.hops.length}-hop chain ×${spell.multiplier}!` : '';
       this.addLog(
-        `${names} cast ${spellName(spell.element)} — ${spell.term.text}! ${spell.tier === 'perfect' ? 'PERFECT! ' : ''}${spell.damage} damage!`,
+        `${names} cast ${spellName(spell.element)} — ${spell.term.text}! ${spell.tier === 'perfect' ? 'PERFECT! ' : ''}${spell.damage} damage!${bonus}`,
         spell.tier === 'perfect' ? 'crit' : 'damage',
       );
     }
@@ -518,12 +570,13 @@ export class Game {
           isBot: p.isBot,
           typing: p.typing,
         })),
-      hopCount: this.hopCount,
+      teams: this.teams.map((t): TeamPublic => ({ ...t, members: [...t.members] })),
       boss: { hp: this.bossHp, maxHp: this.bossMaxHp },
       party: { hp: this.partyHp, maxHp: PARTY_MAX_HP },
       chains: this.chains.map(
         (c): ChainPublic => ({
           id: c.id,
+          teamId: c.teamId,
           element: c.element,
           order: c.order,
           hopIndex: c.hops.length,
