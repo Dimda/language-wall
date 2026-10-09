@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { Server } from 'socket.io';
 import type { ClientToServer, ServerToClient } from '../shared/protocol';
+import { furiganaReady } from './furigana';
 import { Game } from './game';
 
 // Local secrets (e.g. TYPESAFE_API_KEY) live in .env, which is git-ignored. Hosts set real env vars.
@@ -102,5 +103,6 @@ io.on('connection', (socket) => {
 
 http.listen(PORT, '0.0.0.0', () => {
   console.log(`言葉の壁 server on http://localhost:${PORT} ${prod ? '(production)' : '(dev)'}`);
+  void furiganaReady.then(() => console.log('furigana: dictionary loaded'));
   console.log(`judge: ${process.env.TYPESAFE_API_KEY ? 'TypeSafe Jev' : 'mock (set TYPESAFE_API_KEY to use Jev)'}`);
 });

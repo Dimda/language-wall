@@ -38,6 +38,9 @@ export interface PlayerPublic {
   typing: boolean;
 }
 
+/** Text split into plain runs and [kanji, hiragana reading] pairs, rendered as <ruby> furigana. */
+export type Ruby = (string | [string, string])[];
+
 export interface Term {
   id: string;
   text: string;
@@ -51,6 +54,8 @@ export interface Hop {
   toLang: Lang;
   input: string;
   output?: string;
+  /** Furigana for a Japanese `output`. */
+  outputRuby?: Ruby;
 }
 
 /** A team of up to 5 that casts one chain together each round; its element is its colour. */
@@ -84,6 +89,8 @@ export interface JudgeResult {
 
 export interface ResolvedChain {
   id: string;
+  /** Furigana for a Japanese term. */
+  termRuby?: Ruby;
   teamId: string;
   teamName: string;
   element: Element;
@@ -139,6 +146,8 @@ export interface Task {
   hopIndex: number;
   hopCount: number;
   prevText: string;
+  /** Furigana for a Japanese `prevText`. */
+  prevRuby?: Ruby;
   fromLang: Lang;
   toLang: Lang;
   endsAt: number;

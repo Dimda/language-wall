@@ -4,7 +4,7 @@ import { audio } from '../audio';
 import { checkAnswer, type Rejection } from '../../shared/guard';
 import { socket, useGame } from '../net';
 import { ELEMENT_COLOR, ELEMENT_LABEL } from './sprites';
-import { Typewriter, useNow } from './ui';
+import { SpokenText, useNow } from './ui';
 
 const LANG_LABEL: Record<Lang, string> = { ja: '日本語', en: 'English' };
 
@@ -110,7 +110,7 @@ export function TaskPanel({ task, status }: { task: Task | null; status: string 
       </div>
       <p className="task-label">{isFirst ? 'お題 / Your word' : '届いた言葉 / You received'}</p>
       <p className="task-prev">
-        「<Typewriter text={task.prevText} ms={22} />」
+        「<SpokenText text={task.prevText} ruby={task.prevRuby} ms={22} />」
       </p>
       <div className={`target target-${task.toLang}`}>
         <span className="target-from">

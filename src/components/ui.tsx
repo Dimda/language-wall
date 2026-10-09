@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { Ruby } from '../../shared/types';
 
 export function useTypewriter(text: string, msPerChar = 28): string {
   const [n, setN] = useState(0);
@@ -49,4 +50,29 @@ export function HpBar({ label, hp, max, variant }: { label: string; hp: number; 
       </div>
     </div>
   );
+}
+
+/** Japanese with furigana: hiragana readings rendered above kanji using <ruby>. */
+export function RubyText({ ruby }: { ruby: Ruby }) {
+  return (
+    <span className="ruby-text">
+      {ruby.map((seg, i) =>
+        typeof seg === 'string' ? (
+          <span key={i}>{seg}</span>
+        ) : (
+          <ruby key={i}>
+            {seg[0]}
+            <rp>(</rp>
+            <rt>{seg[1]}</rt>
+            <rp>)</rp>
+          </ruby>
+        ),
+      )}
+    </span>
+  );
+}
+
+/** Plain text with a typewriter effect, or furigana text (shown whole) when a reading is available. */
+export function SpokenText({ text, ruby, ms }: { text: string; ruby?: Ruby; ms?: number }) {
+  return ruby ? <RubyText ruby={ruby} /> : <Typewriter text={text} ms={ms} />;
 }

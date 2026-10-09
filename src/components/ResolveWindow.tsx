@@ -1,6 +1,6 @@
 import type { ResolveTimeline, Tier } from '../../shared/types';
 import { ELEMENT_COLOR, ELEMENT_LABEL } from './sprites';
-import { Typewriter } from './ui';
+import { RubyText, SpokenText } from './ui';
 
 export type ResolveStage = 'reveal' | 'judge' | 'spell' | 'done';
 
@@ -59,7 +59,7 @@ export function ResolveWindow({ timeline, elapsed }: { timeline: ResolveTimeline
         <ol className="journey">
           <li className="journey-term">
             <span className="who">お題 {chain.term.lang.toUpperCase()}</span>
-            <span className="said">「{chain.term.text}」</span>
+            <span className="said">「{chain.termRuby ? <RubyText ruby={chain.termRuby} /> : chain.term.text}」</span>
           </li>
           {chain.hops.slice(0, shownHops).map((h, i) => (
             <li key={i}>
@@ -67,7 +67,7 @@ export function ResolveWindow({ timeline, elapsed }: { timeline: ResolveTimeline
                 {h.playerName} → {h.toLang.toUpperCase()}
               </span>
               <span className="said">
-                「<Typewriter text={h.output ?? ''} ms={24} />」
+                「<SpokenText text={h.output ?? ''} ruby={h.outputRuby} ms={24} />」
               </span>
             </li>
           ))}
@@ -80,7 +80,8 @@ export function ResolveWindow({ timeline, elapsed }: { timeline: ResolveTimeline
       ) : (
         <div className="judging">
           <p className="compare">
-            「{chain.term.text}」 <span className="arrow">⇒</span> 「{chain.final || '……'}」
+            「{chain.termRuby ? <RubyText ruby={chain.termRuby} /> : chain.term.text}」 <span className="arrow">⇒</span> 「
+            {chain.hops.at(-1)?.outputRuby ? <RubyText ruby={chain.hops.at(-1)!.outputRuby!} /> : chain.final || '……'}」
           </p>
           <div className="bars">
             {BARS.map((b) => (

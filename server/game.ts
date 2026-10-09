@@ -22,6 +22,7 @@ import {
   type Turn,
 } from '../shared/types';
 import { BOSS_HP_PER_PLAYER, type BossDef, LANGUAGE_WALL, PARTY_MAX_HP } from './boss';
+import { furigana } from './furigana';
 import { BROKEN, damageFrom, type Judge, judge as defaultJudge, proximity } from './judge';
 
 export interface Outbox {
@@ -425,6 +426,7 @@ export class Game {
       output: clean,
     };
     hop.output = this.boss.onChainHop?.(hop) ?? hop.output;
+    hop.outputRuby = hop.toLang === 'ja' ? furigana(hop.output ?? '') : undefined;
     c.hops.push(hop);
     if (c.timer) clearTimeout(c.timer);
     p.typing = false;
@@ -498,6 +500,7 @@ export class Game {
     const team = this.teams.find((t) => t.id === c.teamId);
     return {
       id: c.id,
+      termRuby: c.term.lang === 'ja' ? furigana(c.term.text) : undefined,
       teamId: c.teamId,
       teamName: team?.nameEn ?? '',
       element: c.element,
@@ -581,15 +584,19 @@ export class Game {
       hopIndex,
       hopCount: c.order.length,
       prevText: hopInput(c, hopIndex),
+      prevRuby: fromLang === 'ja' ? furigana(hopInput(c, hopIndex)) : undefined,
       fromLang,
       toLang: otherLang(fromLang),
       endsAt: c.hopEndsAt,
     };
   }
 
+  /** Each chain starts in Japanese or English with equal odds, then picks a fresh term in that language. */
   private drawTerm(): Term {
-    const fresh = WORDS.filter((w) => !this.recentTerms.includes(w.id));
-    const pool = fresh.length > 0 ? fresh : WORDS;
+    const lang: Lang = Math.random() < 0.5 ? 'ja' : 'en';
+    const inLang = WORDS.filter((w) => w.lang === lang);
+    const fresh = inLang.filter((w) => !this.recentTerms.includes(w.id));
+    const pool = fresh.length > 0 ? fresh : inLang;
     const term = pool[Math.floor(Math.random() * pool.length)];
     this.recentTerms = [...this.recentTerms, term.id].slice(-Math.floor(WORDS.length / 2));
     return term;

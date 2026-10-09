@@ -2456,3 +2456,28 @@ textarea.input-error {
 .log p.log-proximity::before {
   content: '';
 }
+
+/* ── furigana ── */
+
+ruby {
+  ruby-position: over;
+}
+
+rt {
+  font-size: 0.42em;
+  line-height: 1;
+  color: #d8e6ff;
+  letter-spacing: 0;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.task-prev,
+.journey .said,
+.judging .compare {
+  /* room for the readings above the line */
+  line-height: 1.7;
+}
+
+.ruby-text {
+  animation: pop 0.3s steps(3);
+}

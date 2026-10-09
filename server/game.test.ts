@@ -181,6 +181,21 @@ describe('answer guard in game', () => {
   });
 });
 
+describe('terms', () => {
+  it('starts chains in Japanese and English with roughly equal odds', () => {
+    const counts = { ja: 0, en: 0 };
+    for (let i = 0; i < 60; i++) {
+      const tasks = new Map<string, Task | null>();
+      const game = new Game({ snapshot: () => {}, task: (id, t) => tasks.set(id, t), resolve: () => {}, bossAttack: () => {} }, { judge: mockJudge, minPlayers: 1, timing: FAST });
+      game.join('a', 'A', 'obachan');
+      game.start('a');
+      counts[tasks.get('a')!.fromLang]++;
+    }
+    expect(counts.ja).toBeGreaterThan(12);
+    expect(counts.en).toBeGreaterThan(12);
+  });
+});
+
 describe('session controls', () => {
   const make = () => {
     const snaps: Snapshot[] = [];
