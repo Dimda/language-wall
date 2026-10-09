@@ -12,7 +12,7 @@ export const normalize = (s: string): string =>
     .toLowerCase()
     .replace(/[\s\p{P}\p{S}]/gu, '');
 
-const EXACT: JudgeResult = { exact: 1, same_concept: 0, related: 0, lost: 0 };
+const EXACT: JudgeResult = { exact: 1, same_concept: 0, related: 0, lost: 0, confidence: 1 };
 
 /** Mock: exact on normalized match, otherwise a random "dominant" verdict so all tiers show up. */
 export const mockJudge: Judge = async (original, final) => {
@@ -83,10 +83,19 @@ export function jevJudge(apiKey: string, { timeoutMs = 8000, fallback = mockJudg
           continue;
         }
         if (!res.ok) throw new Error(`TypeSafe ${res.status}: ${(await res.text()).slice(0, 200)}`);
-        const data = (await res.json()) as { answers?: { meaning?: { probabilities?: Partial<JudgeResult> } } };
-        const p = data.answers?.meaning?.probabilities;
+        const data = (await res.json()) as {
+          answers?: { meaning?: { probabilities?: Partial<JudgeResult>; confidence?: number } };
+        };
+        const answer = data.answers?.meaning;
+        const p = answer?.probabilities;
         if (!p) throw new Error('TypeSafe response had no probabilities');
-        return { exact: p.exact ?? 0, same_concept: p.same_concept ?? 0, related: p.related ?? 0, lost: p.lost ?? 0 };
+        return {
+          exact: p.exact ?? 0,
+          same_concept: p.same_concept ?? 0,
+          related: p.related ?? 0,
+          lost: p.lost ?? 0,
+          confidence: answer.confidence,
+        };
       }
     } catch (err) {
       console.warn('[judge] Jev failed, using fallback judge:', err instanceof Error ? err.message : err);
@@ -101,9 +110,15 @@ export const WEIGHTS = { exact: 100, same_concept: 70, related: 30, lost: 0 } as
 export const CRIT_THRESHOLD = 0.9;
 export const CRIT_MULTIPLIER = 1.5;
 
-/** How much meaning survived, 0–100: the verdict mix weighted like damage (exact 100, same 70, related 30). */
-export const proximity = (r: JudgeResult) =>
-  Math.round(r.exact * 100 + r.same_concept * 70 + r.related * 30);
+export type Verdict = 'exact' | 'same_concept' | 'related' | 'lost';
+
+/** The judge's verdict (most likely category) and its confidence, 0–1. */
+export function verdictOf(r: JudgeResult): { verdict: Verdict; confidence: number } {
+  const verdicts: Verdict[] = ['exact', 'same_concept', 'related', 'lost'];
+  const verdict = verdicts.reduce((best, v) => (r[v] > r[best] ? v : best), verdicts[0]);
+  // Jev reports its own confidence; the mock falls back to the winning probability.
+  return { verdict, confidence: r.confidence ?? r[verdict] };
+}
 
 export const BROKEN: JudgeResult = { exact: 0, same_concept: 0, related: 0, lost: 1 };
 

@@ -85,6 +85,8 @@ export interface JudgeResult {
   same_concept: number;
   related: number;
   lost: number;
+  /** How sure the judge is of its verdict, 0–1 (Jev's answer confidence). */
+  confidence?: number;
 }
 
 export interface ResolvedChain {
@@ -124,7 +126,7 @@ export const IMPACT_MS = 1300;
 export interface LogEntry {
   id: number;
   text: string;
-  kind: 'info' | 'damage' | 'crit' | 'boss' | 'system' | 'fizzle' | 'proximity';
+  kind: 'info' | 'damage' | 'crit' | 'boss' | 'system' | 'fizzle' | 'verdict';
 }
 
 export interface Snapshot {

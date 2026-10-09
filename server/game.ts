@@ -23,7 +23,7 @@ import {
 } from '../shared/types';
 import { BOSS_HP_PER_PLAYER, type BossDef, LANGUAGE_WALL, PARTY_MAX_HP } from './boss';
 import { furigana } from './furigana';
-import { BROKEN, damageFrom, type Judge, judge as defaultJudge, proximity } from './judge';
+import { BROKEN, damageFrom, type Judge, judge as defaultJudge, type Verdict, verdictOf } from './judge';
 
 export interface Outbox {
   snapshot(s: Snapshot): void;
@@ -105,6 +105,12 @@ interface Chain {
 }
 
 const MAX_TEXT = 200;
+const VERDICT_LABEL: Record<Verdict, string> = {
+  exact: '完全一致 · exact',
+  same_concept: '同じ意味 · same idea',
+  related: '関連 · related',
+  lost: '失われた · lost',
+};
 const MAX_LOG = 30;
 const BOT_NAMES = ['ボット太郎', 'Botty', 'ロボ子', 'Clanker'];
 
@@ -529,11 +535,10 @@ export class Game {
       );
     }
     if (!spell.broken) {
-      const pct = (v: number) => Math.round(v * 100);
-      const j = spell.judge;
+      const { verdict, confidence } = verdictOf(spell.judge);
       this.addLog(
-        `↳ 意味の近さ / proximity ${proximity(j)}% — exact ${pct(j.exact)} · same ${pct(j.same_concept)} · related ${pct(j.related)} · lost ${pct(j.lost)}`,
-        'proximity',
+        `↳ 判定 / verdict: ${VERDICT_LABEL[verdict]} — 確信度 / confidence ${Math.round(confidence * 100)}%`,
+        'verdict',
       );
     }
     if (this.bossHp <= 0) this.bossDefeated();

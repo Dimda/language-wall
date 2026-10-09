@@ -19,7 +19,7 @@ with a placeholder (mock) judge.
 [TypeSafe Jev](https://typesafe.ai), which scores how much meaning survived each translation chain
 (exact / same idea / related / lost) and drives the damage. Alongside that, refinements:
 
-- proximity values in the battle log, a host-only END GAME button, a 3-player minimum, removable bots
+- Jev's verdict and confidence in the battle log, a host-only END GAME button, a 3-player minimum, removable bots
 - a bigger casual vocabulary with short phrases (126 terms)
 - furigana (hiragana readings) over kanji, and chains starting in Japanese or English with equal odds
 
@@ -42,7 +42,7 @@ See everything done during the hackathon:
 伝言チェーンでどれだけ意味が残ったか（完全一致 / 同じ意味 / 関連 / 失われた）を判定し、そのままダメージに
 反映します。あわせて以下の改善も行いました:
 
-- バトルログに「意味の近さ」を表示、ホスト専用の終了ボタン、3人以上で開始、ボットの削除
+- バトルログに Jev の判定と確信度を表示、ホスト専用の終了ボタン、3人以上で開始、ボットの削除
 - 語彙を拡大し、短いフレーズも追加（126語）
 - 漢字にふりがな（ひらがな）を表示、最初の言葉は日本語・英語をランダムに出題
 
@@ -75,7 +75,7 @@ Env vars: `TYPESAFE_API_KEY` (enables the Jev judge; without it a mock judge is 
 
 - 3–30 players (bots included): the host can't start with fewer than 3; the join screen shows "party full" beyond 30.
 - The host can add/remove bots in the lobby (dev mode) and end a running game for everyone (■ END GAME).
-- The battle log shows each spell's proximity: how much meaning survived (exact/same/related/lost from the judge).
+- The battle log shows each spell's verdict (exact / same idea / related / lost) and the judge's confidence in it.
 - When the battle starts, players are split into the fewest teams of at most 5, as evenly as possible
   (21 players → 5·4·4·4·4). Late joiners go to the smallest team.
 - Each round every team casts one chain together: every member translates once, alternating JA ⇄ EN.

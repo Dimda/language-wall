@@ -2446,14 +2446,14 @@ textarea.input-error {
   padding-right: 40px;
 }
 
-/* proximity line under each spell in the battle log */
-.log-proximity {
+/* verdict + confidence line under each spell in the battle log */
+.log-verdict {
   color: #9ad4ff;
   font-size: 12px;
   padding-left: 12px;
 }
 
-.log p.log-proximity::before {
+.log p.log-verdict::before {
   content: '';
 }
 
