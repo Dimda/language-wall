@@ -434,3 +434,431 @@
 .tr-fade.show {
   opacity: 1;
 }
+
+/* ── explainer scenes (STEP 1–4) ───────────── */
+
+.tr-explain {
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(255, 60, 30, 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 40%, #241030 0%, #06030a 72%);
+}
+
+.tr-step {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  text-shadow:
+    4px 4px 0 #000,
+    0 0 18px rgba(255, 80, 30, 0.6);
+}
+
+.tr-step.big {
+  top: 0;
+  bottom: 0;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  animation: step-slam 0.45s steps(5);
+}
+
+.tr-step.big b {
+  font-size: 110px;
+  font-weight: normal;
+  line-height: 1.05;
+  color: var(--gold);
+}
+
+.tr-step.big small {
+  font-size: 34px;
+  letter-spacing: 0.35em;
+  color: var(--text);
+}
+
+.tr-step-n {
+  font-size: 28px;
+  letter-spacing: 0.5em;
+  color: #ff5a3a;
+}
+
+.tr-step.small {
+  top: 18px;
+  flex-direction: row;
+  gap: 16px;
+  align-items: baseline;
+  animation: pop 0.3s steps(3);
+}
+
+.tr-step.small .tr-step-n {
+  font-size: 18px;
+  letter-spacing: 0.3em;
+}
+
+.tr-step.small b {
+  font-weight: normal;
+  font-size: 34px;
+  color: var(--gold);
+}
+
+.tr-step.small small {
+  font-size: 18px;
+  letter-spacing: 0.2em;
+  color: var(--dim);
+}
+
+@keyframes step-slam {
+  0% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.94);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* STEP 1: teams */
+
+.tr-teams {
+  position: absolute;
+  inset: 90px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.tr-crowd {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 980px;
+  transition: opacity 0.4s steps(4), transform 0.4s steps(4);
+}
+
+.tr-crowd p {
+  width: 100%;
+  margin: 6px 0 0;
+  text-align: center;
+  font-size: 24px;
+  color: var(--text);
+}
+
+.tr-crowd.gone {
+  opacity: 0;
+  transform: translateY(-30px) scale(0.9);
+  position: absolute;
+}
+
+.tr-team-boxes {
+  display: flex;
+  gap: 26px;
+  margin-top: 30px;
+}
+
+.tr-team-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 12px;
+  border: 3px solid var(--el);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el) 14%, rgba(0, 0, 0, 0.5));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--el) 50%, transparent);
+  animation: hero-pop 0.45s steps(4) both;
+}
+
+.tr-team-box > span {
+  font-size: 22px;
+  color: var(--el);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.tr-team-box > div {
+  display: flex;
+  gap: 4px;
+}
+
+.tr-team-box small {
+  color: var(--dim);
+  font-size: 15px;
+}
+
+.tr-explain-text {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 34px;
+  color: var(--gold);
+  text-shadow: 3px 3px 0 #000;
+  animation: pop 0.4s steps(4);
+}
+
+.tr-explain-text small {
+  display: block;
+  font-size: 20px;
+  color: var(--text);
+}
+
+/* STEP 2: the chain */
+
+.tr-chain {
+  position: absolute;
+  inset: 80px 30px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.tr-chain-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: pop 0.4s steps(4);
+}
+
+.tr-chain-start b {
+  font-weight: normal;
+  font-size: 64px;
+  line-height: 1.6;
+  color: var(--gold);
+  text-shadow: 4px 4px 0 #8a2a1a;
+}
+
+.tr-chain-start b rt {
+  font-size: 0.32em;
+  color: #ffe9a0;
+}
+
+.tr-chain-start small {
+  color: var(--dim);
+  font-size: 16px;
+}
+
+.tr-tag {
+  font-size: 15px;
+  padding: 1px 10px;
+  border: 2px solid;
+  border-radius: 4px;
+}
+
+.tr-tag.ja {
+  color: #ffa0aa;
+  border-color: #ff5a6a;
+}
+
+.tr-chain-track {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  width: 100%;
+  position: relative;
+}
+
+.tr-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border: 3px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #10104a 0%, #000010 100%);
+  box-shadow: 0 0 0 3px #000;
+  min-height: 210px;
+  animation: hero-pop 0.4s steps(4);
+}
+
+.tr-node.placeholder {
+  visibility: hidden;
+}
+
+.tr-node.typing {
+  border-color: var(--gold);
+}
+
+.tr-lang-pill {
+  font-size: 20px;
+  padding: 0 12px;
+  border: 2px solid;
+  border-radius: 4px;
+}
+
+.tr-lang-pill.to-en {
+  color: #9ad4ff;
+  border-color: #5ab0ff;
+  background: rgba(90, 176, 255, 0.16);
+}
+
+.tr-lang-pill.to-ja {
+  color: #ffa0aa;
+  border-color: #ff5a6a;
+  background: rgba(255, 90, 106, 0.16);
+}
+
+.tr-node-who {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  color: var(--dim);
+}
+
+.tr-bubble {
+  top: -6px;
+  right: auto;
+  left: 44px;
+}
+
+.tr-node-text {
+  margin: 0;
+  text-align: center;
+  font-size: 26px;
+  line-height: 1.7;
+}
+
+.tr-node.typing .tr-node-text {
+  color: var(--dim);
+  animation: blink 0.6s steps(2) infinite;
+}
+
+.tr-rules {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  animation: pop 0.4s steps(4);
+}
+
+.tr-rules span {
+  font-size: 19px;
+  padding: 4px 12px;
+  border: 2px solid;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.tr-rules .bad {
+  color: #ffb0b8;
+  border-color: var(--red);
+}
+
+.tr-rules .good {
+  color: #b8ffc8;
+  border-color: var(--green);
+}
+
+/* STEP 3: verdict */
+
+.tr-verdict {
+  position: absolute;
+  left: 150px;
+  right: 150px;
+  top: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 32px;
+  border-color: var(--gold);
+  animation: pop 0.4s steps(4);
+}
+
+.tr-compare {
+  margin: 0;
+  text-align: center;
+  font-size: 34px;
+  line-height: 1.7;
+}
+
+.tr-compare span {
+  color: var(--gold);
+}
+
+.tr-verdict .bar-row {
+  grid-template-columns: 220px 1fr 70px;
+  font-size: 18px;
+}
+
+.tr-verdict .bar-track {
+  height: 16px;
+}
+
+.tr-verdict-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px 24px;
+  animation: step-slam 0.45s steps(5);
+}
+
+.tr-verdict-line b {
+  font-weight: normal;
+  font-size: 40px;
+  color: var(--gold);
+  text-shadow: 3px 3px 0 #000;
+}
+
+.tr-verdict-line span {
+  font-size: 22px;
+  color: #9ad4ff;
+}
+
+.tr-verdict-line .chain-bonus {
+  color: var(--gold);
+}
+
+.tr-jev {
+  margin: 0;
+  text-align: center;
+  font-size: 20px;
+  color: var(--dim);
+  animation: pop 0.4s steps(4);
+}
+
+.tr-jev b {
+  color: #fff;
+  font-weight: normal;
+}
+
+/* STEP 4 tweaks */
+
+.tr-fight-boss .boss-svg {
+  transform: perspective(1600px) rotateY(32deg);
+  transform-origin: 30% 60%;
+}
+
+.tr-hp.party {
+  top: auto;
+  bottom: 14px;
+  left: 520px;
+  right: 40px;
+}
+
+.tr-logo em {
+  margin-top: 8px;
+  font-style: normal;
+  font-size: 20px;
+  color: #9ad4ff;
+  animation: pop 0.4s steps(4);
+}
+
+/* STEP 4: the boss is HUGE here too, wings spilling off the left edge */
+.tr-fight-boss .boss {
+  width: 1040px;
+  margin-left: -260px;
+  flex: none;
+}
+
+.tr-fight-boss {
+  justify-content: flex-start;
+}

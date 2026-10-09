@@ -13,7 +13,7 @@ const url = process.argv[2] ?? 'http://localhost:5173/?trailer';
 const out = process.argv[3] ?? 'media/trailer.webm';
 const W = 1280;
 const H = 720;
-const DURATION_MS = 57_500;
+const DURATION_MS = 81_500;
 
 const browser = await chromium.launch({
   channel: 'chrome',

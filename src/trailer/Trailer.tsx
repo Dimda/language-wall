@@ -1,41 +1,64 @@
 import QRCode from 'qrcode';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AVATAR_IDS, type AvatarId, type Element, IMPACT_MS, type PlayerPublic, type Tier } from '../../shared/types';
+import { type AvatarId, type Element, IMPACT_MS, type PlayerPublic, type Ruby, type Tier } from '../../shared/types';
 import { audio } from '../audio';
 import { Boss } from '../components/Boss';
 import { Fighter } from '../components/Fighter';
 import { KansaiBackdrop } from '../components/KansaiBackdrop';
 import { TIER_LABEL } from '../components/ResolveWindow';
-import { AVATARS, Sprite } from '../components/sprites';
-import { HpBar, Typewriter } from '../components/ui';
+import { AVATARS, ELEMENT_COLOR, Sprite } from '../components/sprites';
+import { HpBar, RubyText, Typewriter } from '../components/ui';
 import { SpellFX } from '../spellfx';
 import './trailer.css';
 
 /**
- * Cinematic ~55s trailer built from the game's own art, music and effects. Renders a fixed
- * 1280×720 frame scaled to the window. Open with `?trailer` (add `&autoplay` to skip the button).
+ * Cinematic ~80s trailer that explains the game, built from the game's own art, music and effects.
+ * Renders a fixed 1280×720 frame scaled to the window. Open with `?trailer` (`&autoplay` focuses play).
  */
 
 const FRAME_W = 1280;
 const FRAME_H = 720;
 const PLAY_URL = new URLSearchParams(location.search).get('url') ?? 'language-wall.onrender.com';
 
-// Scene start times (ms)
+// ── timeline (ms) ──────────────────────────────────────
 const INTRO = 0;
-const SKY = 4800;
-const BOSS = 8800;
-const HEROES = 14200;
-const CHAIN = 20200;
-const FIGHT = 29800;
+const SKY = 5000;
+const BOSS = 9200;
+const HEROES = 15000;
+const TEAMS = 21000; // STEP 1
+const CHAIN = 27000; // STEP 2
+const JUDGE = 41000; // STEP 3
+const FIGHT = 49000; // STEP 4
+const STEP_CARD_MS = 1900;
+
 const CASTS: { at: number; element: Element; tier: Tier; hp: number; casters: number[] }[] = [
-  { at: FIGHT + 700, element: 'fire', tier: 'strong', hp: 76, casters: [0, 1] },
-  { at: FIGHT + 3700, element: 'thunder', tier: 'strong', hp: 52, casters: [2, 3] },
-  { at: FIGHT + 6700, element: 'ice', tier: 'perfect', hp: 18, casters: [0, 3] },
-  { at: FIGHT + 9700, element: 'light', tier: 'perfect', hp: 0, casters: [0, 1, 2, 3] },
+  { at: FIGHT + 2300, element: 'fire', tier: 'strong', hp: 80, casters: [0, 1] },
+  { at: FIGHT + 5100, element: 'thunder', tier: 'strong', hp: 58, casters: [2, 3] },
+  { at: FIGHT + 7900, element: 'ice', tier: 'perfect', hp: 24, casters: [0, 2, 3] },
+  { at: FIGHT + 13600, element: 'light', tier: 'perfect', hp: 0, casters: [0, 1, 2, 3] },
 ];
+const ENEMY_TURN = FIGHT + 10700;
 const KILL = CASTS[CASTS.length - 1].at + IMPACT_MS;
 const FINALE = KILL + 5200;
-const END = FINALE + 10500;
+const END = FINALE + 11500;
+const BOSS_MAX = 1500;
+
+// ── the example chain shown in STEP 2 / STEP 3 ─────────
+const TERM = '一期一会';
+const TERM_RUBY: Ruby = [['一期一会', 'いちごいちえ']];
+const HOPS: { who: string; avatar: AvatarId; to: 'EN' | 'JA'; text: string; ruby?: Ruby }[] = [
+  { who: 'Aiko', avatar: 'obachan', to: 'EN', text: 'a once-in-a-lifetime meeting' },
+  {
+    who: 'Sam',
+    avatar: 'gaijin',
+    to: 'JA',
+    text: '一生に一度の出会い',
+    ruby: [['一生', 'いっしょう'], 'に', ['一度', 'いちど'], 'の', ['出会', 'であ'], 'い'],
+  },
+  { who: 'Keiko', avatar: 'maiko', to: 'EN', text: 'meeting someone only once in your life' },
+];
+const HOP_AT = [CHAIN + 4600, CHAIN + 7300, CHAIN + 10000]; // text appears; typing starts 1.1s before
+const VERDICT = { exact: 0.58, same_concept: 0.38, related: 0.04, lost: 0, confidence: 88 };
 
 const FIGHTERS: { id: string; name: string; avatar: AvatarId }[] = [
   { id: 'f0', name: 'Aiko', avatar: 'obachan' },
@@ -88,14 +111,13 @@ const between = (t: number, a: number, b: number) => t >= a && t < b;
 export function Trailer() {
   const autoplay = new URLSearchParams(location.search).has('autoplay');
   const [run, setRun] = useState(0);
-  const playing = run > 0;
   const t = useClock(run);
   const scale = useFrameScale();
 
   return (
     <div className="trailer-root">
       <div className="trailer-frame" style={{ transform: `scale(${scale})` }}>
-        {playing ? (
+        {run > 0 ? (
           <TrailerScenes key={run} t={t} onReplay={() => setRun((r) => r + 1)} />
         ) : (
           <button
@@ -116,26 +138,43 @@ export function Trailer() {
   );
 }
 
+/** Big "STEP n" title card that slams in, then shrinks into a header for the rest of the scene. */
+function StepCard({ t, start, n, ja, en }: { t: number; start: number; n: number; ja: string; en: string }) {
+  const big = t - start < STEP_CARD_MS;
+  return (
+    <div className={`tr-step ${big ? 'big' : 'small'}`} key={big ? 'big' : 'small'}>
+      <span className="tr-step-n">STEP {n}</span>
+      <b>{ja}</b>
+      <small>{en}</small>
+    </div>
+  );
+}
+
 function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
   const [bossHp, setBossHp] = useState(100);
+  const [partyHp, setPartyHp] = useState(100);
   const [hitKey, setHitKey] = useState(0);
+  const [hurtKey, setHurtKey] = useState(0);
   const [floats, setFloats] = useState<{ id: number; amount: number; tier: Tier }[]>([]);
   const [tier, setTier] = useState<{ id: number; tier: Tier } | null>(null);
   const [channel, setChannel] = useState<{ ids: number[]; element: Element } | null>(null);
   const [banner, setBanner] = useState<{ id: number; text: string; sub: string } | null>(null);
+  const [flash, setFlash] = useState(0);
   const stageRef = useRef<HTMLDivElement>(null);
   const bossRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fx = useRef<SpellFX | null>(null);
   const frameRef = useRef<HTMLDivElement>(null);
 
-  // Scripted events: music, sound effects, spell casts and boss damage.
+  // Scripted events: music, sound effects, spell casts, boss and party damage.
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
     const shake = (strength: number, ms: number) =>
       frameRef.current?.animate(
-        [0, -strength, strength, -strength / 2, strength / 2, 0].map((x, i) => ({ transform: `translate(${x}px, ${i % 2 ? strength / 3 : 0}px)` })),
+        [0, -strength, strength, -strength / 2, strength / 2, 0].map((x, i) => ({
+          transform: `translate(${x}px, ${i % 2 ? strength / 3 : 0}px)`,
+        })),
         { duration: ms, easing: 'steps(6)' },
       );
     const center = (el: { getBoundingClientRect(): DOMRect } | null | undefined) => {
@@ -144,6 +183,7 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
       return stage && r ? { x: r.left - stage.left + r.width / 2, y: r.top - stage.top + r.height / 2 } : null;
     };
 
+    // intro + reveal
     audio.play('quiet');
     at(INTRO + 300, () => audio.sfx('blip'));
     at(BOSS + 500, () => {
@@ -153,15 +193,40 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
     at(BOSS + 1700, () => {
       audio.play('battle');
       audio.sfx('crit');
-      shake(16, 500);
+      shake(18, 500);
     });
-    for (let i = 0; i < AVATAR_IDS.length; i++) at(HEROES + 900 + i * 280, () => audio.sfx('select'));
-    at(CHAIN + 600, () => audio.sfx('blip'));
-    at(CHAIN + 2400, () => audio.sfx('submit'));
-    at(CHAIN + 5200, () => audio.sfx('submit'));
-    at(CHAIN + 6800, () => audio.sfx('judge'));
-    at(CHAIN + 8000, () => audio.sfx('select'));
+    for (let i = 0; i < AVATARS.length; i++) at(HEROES + 900 + i * 260, () => audio.sfx('select'));
 
+    // step cards
+    for (const s of [TEAMS, CHAIN, JUDGE, FIGHT]) {
+      at(s + 50, () => {
+        audio.sfx('crit');
+        shake(8, 300);
+      });
+    }
+
+    // STEP 1: teams form
+    at(TEAMS + 4000, () => audio.sfx('submit'));
+
+    // STEP 2: the chain
+    at(CHAIN + 2300, () => audio.sfx('blip'));
+    HOP_AT.forEach((ms) => {
+      at(ms - 1100, () => audio.sfx('select'));
+      at(ms, () => audio.sfx('submit'));
+    });
+    at(CHAIN + 11800, () => audio.sfx('fizzle'));
+    at(CHAIN + 12500, () => audio.sfx('select'));
+
+    // STEP 3: Jev judges
+    at(JUDGE, () => audio.play('quiet'));
+    at(JUDGE + 2200, () => audio.sfx('judge'));
+    at(JUDGE + 4300, () => {
+      audio.sfx('crit');
+      shake(10, 400);
+    });
+
+    // STEP 4: spells, enemy turn, final blow
+    at(FIGHT, () => audio.play('battle'));
     CASTS.forEach((c, i) => {
       at(c.at, () => {
         setChannel({ ids: c.casters, element: c.element });
@@ -179,20 +244,27 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
         setBossHp(c.hp);
         setTier({ id: i + 1, tier: c.tier });
         const prev = i === 0 ? 100 : CASTS[i - 1].hp;
-        setFloats((f) => [...f, { id: i + 1, amount: Math.round((prev - c.hp) * 4.8), tier: c.tier }]);
+        setFloats((f) => [...f, { id: i + 1, amount: Math.round(((prev - c.hp) / 100) * BOSS_MAX), tier: c.tier }]);
         audio.sfx(c.tier === 'perfect' ? 'crit' : 'hit');
-        shake(c.tier === 'perfect' ? 16 : 8, c.tier === 'perfect' ? 600 : 300);
+        shake(c.tier === 'perfect' ? 18 : 8, c.tier === 'perfect' ? 600 : 300);
       });
     });
-
+    at(ENEMY_TURN, () => {
+      audio.sfx('boss');
+      shake(16, 600);
+      setFlash((f) => f + 1);
+      setHurtKey((k) => k + 1);
+      setPartyHp(62);
+      setBanner({ id: 1, text: 'ENEMY TURN / 敵のターン', sub: 'Fizzled spells make it hit harder — 不発が多いほど強烈に' });
+    });
     at(KILL, () => {
       audio.play(null);
       audio.sfx('crumble');
       shake(6, 1200);
     });
     at(KILL + 1200, () => {
-      shake(22, 900);
-      setBanner({ id: 1, text: '言葉の壁が崩れた!', sub: 'THE WALL CRUMBLES!' });
+      shake(24, 900);
+      setBanner({ id: 2, text: '言葉の壁が崩れた!', sub: 'THE WALL CRUMBLES!' });
     });
     at(FINALE, () => audio.play('victory'));
     at(FINALE + 4200, () => audio.play('menu'));
@@ -205,43 +277,55 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
     };
   }, []);
 
-  const bossShown = t >= BOSS && t < CHAIN;
+  const typingHop = HOP_AT.findIndex((ms) => t >= ms - 1100 && t < ms);
   const fighting = t >= FIGHT && t < FINALE;
 
   return (
     <div ref={frameRef} className="tr-frame-inner">
-      {/* 1. intro */}
+      {/* 0. cold open */}
       <section className={`tr-scene tr-intro ${between(t, INTRO, SKY + 600) ? 'show' : ''}`}>
-        {t >= 400 && <p className="tr-line big"><Typewriter text="関西。" ms={120} /></p>}
-        {t >= 1500 && <p className="tr-line"><Typewriter text="Japanese speakers. English speakers." ms={40} /></p>}
-        {t >= 3000 && <p className="tr-line"><Typewriter text="Same feelings. Different words." ms={40} /></p>}
+        {t >= 400 && (
+          <p className="tr-line big">
+            <Typewriter text="関西。" ms={120} />
+          </p>
+        )}
+        {t >= 1500 && (
+          <p className="tr-line">
+            <Typewriter text="Japanese speakers. English speakers." ms={40} />
+          </p>
+        )}
+        {t >= 3100 && (
+          <p className="tr-line">
+            <Typewriter text="Same feelings. Different words." ms={40} />
+          </p>
+        )}
       </section>
 
-      {/* 2–3. skyline + boss reveal */}
-      <section className={`tr-scene tr-stage-scene ${between(t, SKY, CHAIN) ? 'show' : ''}`}>
+      {/* 1–2. skyline, boss reveal, heroes */}
+      <section className={`tr-scene tr-stage-scene ${between(t, SKY, TEAMS + 400) ? 'show' : ''}`}>
         <div className="tr-stage">
           <KansaiBackdrop />
-          {bossShown && (
+          {t >= BOSS && t < TEAMS + 400 && (
             <div className="tr-boss-rise">
               <Boss hpPct={100} hitKey={0} />
             </div>
           )}
         </div>
-        {between(t, SKY + 800, BOSS + 200) && <p className="tr-caption">But between them stands…</p>}
+        {between(t, SKY + 800, BOSS + 300) && <p className="tr-caption">But between them stands…</p>}
         {t >= BOSS + 1700 && t < HEROES && (
           <div className="tr-title">
             <b>言葉の壁</b>
             <small>THE LANGUAGE WALL</small>
           </div>
         )}
-        {t >= HEROES && t < CHAIN && (
+        {t >= HEROES && t < TEAMS + 400 && (
           <div className="tr-heroes">
-            <p className="tr-caption top">Choose your fighter · 12 Kansai heroes</p>
+            <p className="tr-caption top">Up to 30 heroes · 12 Kansai fighters · 最大30人で挑め</p>
             <div className="tr-hero-grid">
               {AVATARS.map((a, i) =>
-                t >= HEROES + 900 + i * 280 ? (
+                t >= HEROES + 900 + i * 260 ? (
                   <div key={a.id} className="tr-hero">
-                    <Sprite avatar={a.id} size={92} />
+                    <Sprite avatar={a.id} size={92} walk />
                     <span>{a.labelJa}</span>
                     <small>{a.label}</small>
                   </div>
@@ -254,67 +338,151 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
         )}
       </section>
 
-      {/* 4. the chain mechanic */}
-      <section className={`tr-scene tr-chain ${between(t, CHAIN, FIGHT) ? 'show' : ''}`}>
-        <p className="tr-caption top">Pass the word across languages</p>
-        <div className="window tr-journey">
-          {t >= CHAIN + 600 && (
-            <div className="tr-hop">
-              <span className="who">お題 JA</span>
-              <span className="said term">「仲直り」</span>
-            </div>
-          )}
-          {t >= CHAIN + 1600 && (
-            <div className="tr-hop">
-              <span className="who">
-                <Sprite avatar="obachan" size={44} /> Aiko → EN
-              </span>
-              <span className="said">
-                「<Typewriter text="when two friends stop fighting and are friends again" ms={30} />」
-              </span>
-            </div>
-          )}
-          {t >= CHAIN + 4200 && (
-            <div className="tr-hop">
-              <span className="who">
-                <Sprite avatar="gaijin" size={44} /> Sam → JA
-              </span>
-              <span className="said">
-                「<Typewriter text="仲良しに戻る" ms={110} />」
-              </span>
-            </div>
-          )}
-          {t >= CHAIN + 6600 && (
-            <div className="tr-judge">
-              <div className="bars">
-                {(
-                  [
-                    ['EXACT', 'exact', 0.12],
-                    ['SAME IDEA', 'same_concept', 0.74],
-                    ['RELATED', 'related', 0.12],
-                    ['LOST', 'lost', 0.02],
-                  ] as const
-                ).map(([label, key, v]) => {
-                  const k = Math.min(1, (t - CHAIN - 6600) / 1200);
-                  return (
-                    <div key={key} className="bar-row">
-                      <span>{label}</span>
-                      <div className="bar-track">
-                        <div className={`bar-fill ${key}`} style={{ width: `${v * 100 * k}%` }} />
+      {/* STEP 1: team up */}
+      <section className={`tr-scene tr-explain ${between(t, TEAMS, CHAIN + 300) ? 'show' : ''}`}>
+        {t >= TEAMS && t < CHAIN + 300 && (
+          <>
+            <StepCard t={t} start={TEAMS} n={1} ja="チームを組む" en="TEAM UP" />
+            {t >= TEAMS + STEP_CARD_MS && (
+              <div className="tr-teams">
+                <div className={`tr-crowd ${t >= TEAMS + 3800 ? 'gone' : ''}`}>
+                  {Array.from({ length: 13 }, (_, i) => (
+                    <Sprite key={i} avatar={AVATARS[i % AVATARS.length].id} size={64} walk />
+                  ))}
+                  <p>13 players join · 13人が参加</p>
+                </div>
+                {t >= TEAMS + 3800 && (
+                  <div className="tr-team-boxes">
+                    {[
+                      { name: 'たこ焼き隊', el: 'fire' as Element, n: 5, from: 0 },
+                      { name: '通天閣団', el: 'ice' as Element, n: 4, from: 5 },
+                      { name: '鹿せんべい組', el: 'thunder' as Element, n: 4, from: 9 },
+                    ].map((team, ti) => (
+                      <div
+                        key={team.name}
+                        className="tr-team-box"
+                        style={{ '--el': ELEMENT_COLOR[team.el], animationDelay: `${ti * 0.18}s` } as React.CSSProperties}
+                      >
+                        <span>{team.name}</span>
+                        <div>
+                          {Array.from({ length: team.n }, (_, k) => (
+                            <Sprite key={k} avatar={AVATARS[(team.from + k) % AVATARS.length].id} size={64} walk />
+                          ))}
+                        </div>
+                        <small>{team.n} heroes</small>
                       </div>
-                      <span>{Math.round(v * 100 * k)}%</span>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+                )}
+                {t >= TEAMS + 4400 && (
+                  <p className="tr-explain-text">
+                    最大5人のチームに自動で均等に分かれる
+                    <small>Auto-balanced teams of up to 5 — 13 players → 5 · 4 · 4</small>
+                  </p>
+                )}
               </div>
-              {t >= CHAIN + 8000 && <p className="verdict tier-strong">通じた! IT GOT THROUGH!</p>}
-            </div>
-          )}
-        </div>
-        <p className="tr-caption bottom">言葉をつないで翻訳しよう！ / Translate it across languages!</p>
+            )}
+          </>
+        )}
       </section>
 
-      {/* 5–6. spells + boss death */}
+      {/* STEP 2: pass the word */}
+      <section className={`tr-scene tr-explain ${between(t, CHAIN, JUDGE + 300) ? 'show' : ''}`}>
+        {t >= CHAIN && t < JUDGE + 300 && (
+          <>
+            <StepCard t={t} start={CHAIN} n={2} ja="言葉をつなぐ" en="PASS THE WORD" />
+            {t >= CHAIN + STEP_CARD_MS && (
+              <div className="tr-chain">
+                <div className="tr-chain-start">
+                  <span className="tr-tag ja">お題 · JA</span>
+                  <b>
+                    「<RubyText ruby={TERM_RUBY} />」
+                  </b>
+                  <small>random word — Japanese or English · 日本語か英語がランダムに出題</small>
+                </div>
+                <div className="tr-chain-track">
+                  {HOPS.map((h, i) => {
+                    const shown = t >= HOP_AT[i];
+                    const typing = typingHop === i;
+                    if (!shown && !typing) return <div key={i} className="tr-node placeholder" />;
+                    return (
+                      <div key={i} className={`tr-node ${shown ? 'done' : 'typing'}`}>
+                        <div className={`tr-lang-pill to-${h.to.toLowerCase()}`}>→ {h.to === 'JA' ? '日本語' : 'ENGLISH'}</div>
+                        <div className="tr-node-who">
+                          <Sprite avatar={h.avatar} size={72} walk={!typing} />
+                          {typing && <span className="bubble tr-bubble">✎…</span>}
+                          <span>{h.who}</span>
+                        </div>
+                        <p className="tr-node-text">
+                          {shown ? h.ruby ? <RubyText ruby={h.ruby} /> : <Typewriter text={h.text} ms={22} /> : '…'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                {t >= CHAIN + 11600 && (
+                  <div className="tr-rules">
+                    <span className="bad">✕ 同じ言葉はNG · No copying the word</span>
+                    <span className="good">✓ もう一方の言語で書く · Write it in the other language</span>
+                    <span className="good">✓ 漢字にはふりがな · Furigana over kanji</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      {/* STEP 3: Jev judges */}
+      <section className={`tr-scene tr-explain ${between(t, JUDGE, FIGHT + 300) ? 'show' : ''}`}>
+        {t >= JUDGE && t < FIGHT + 300 && (
+          <>
+            <StepCard t={t} start={JUDGE} n={3} ja="Jev が判定" en="JEV JUDGES THE MEANING" />
+            {t >= JUDGE + STEP_CARD_MS && (
+              <div className="window tr-verdict">
+                <p className="tr-compare">
+                  「<RubyText ruby={TERM_RUBY} />」 <span>⇒</span> 「{HOPS[HOPS.length - 1].text}」
+                </p>
+                <div className="bars">
+                  {(
+                    [
+                      ['完全一致 · EXACT', 'exact', VERDICT.exact],
+                      ['同じ意味 · SAME IDEA', 'same_concept', VERDICT.same_concept],
+                      ['関連 · RELATED', 'related', VERDICT.related],
+                      ['失われた · LOST', 'lost', VERDICT.lost],
+                    ] as const
+                  ).map(([label, key, v]) => {
+                    const k = Math.min(1, Math.max(0, (t - JUDGE - 2200) / 1600));
+                    return (
+                      <div key={key} className="bar-row">
+                        <span>{label}</span>
+                        <div className="bar-track">
+                          <div className={`bar-fill ${key}`} style={{ width: `${v * 100 * k}%` }} />
+                        </div>
+                        <span>{Math.round(v * 100 * k)}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {t >= JUDGE + 4300 && (
+                  <div className="tr-verdict-line">
+                    <b>判定: 完全一致 · EXACT</b>
+                    <span>確信度 / confidence {VERDICT.confidence}%</span>
+                    <span className="chain-bonus">3-HOP ×1.5 — longer chains hit harder</span>
+                  </div>
+                )}
+                {t >= JUDGE + 5200 && (
+                  <p className="tr-jev">
+                    Judged by <b>TypeSafe Jev</b> — meaning, not word-for-word
+                  </p>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      {/* STEP 4: cast together, enemy turn, final blow */}
       <section className={`tr-scene tr-stage-scene ${between(t, FIGHT, FINALE) ? 'show' : ''}`}>
         {fighting && (
           <div className="tr-stage" ref={stageRef}>
@@ -338,7 +506,7 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
                     element={channel?.ids.includes(i) ? channel.element : null}
                     size={96}
                     isMe={false}
-                    hurtKey={0}
+                    hurtKey={hurtKey}
                   />
                 ))}
               </div>
@@ -357,14 +525,18 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
               </div>
             )}
             <div className="tr-hp">
-              <HpBar label="言葉の壁 / THE LANGUAGE WALL" hp={Math.round(bossHp * 4.8)} max={480} variant="boss" />
+              <HpBar label="言葉の壁 / THE LANGUAGE WALL" hp={Math.round((bossHp / 100) * BOSS_MAX)} max={BOSS_MAX} variant="boss" />
+            </div>
+            <div className="tr-hp party">
+              <HpBar label="PARTY" hp={partyHp} max={100} variant="party" />
             </div>
           </div>
         )}
-        {between(t, FIGHT, FIGHT + 2400) && <p className="tr-caption top">Every word you pass becomes a spell</p>}
+        {between(t, FIGHT, FIGHT + 2300) && <StepCard t={t} start={FIGHT} n={4} ja="魔法を放て" en="CAST TOGETHER" />}
+        {flash > 0 && between(t, ENEMY_TURN, ENEMY_TURN + 600) && <div key={flash} className="flash" />}
       </section>
 
-      {/* 7. finale */}
+      {/* finale */}
       <section className={`tr-scene tr-finale ${t >= FINALE ? 'show' : ''}`}>
         {t >= FINALE && (
           <>
@@ -379,7 +551,7 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
             </div>
             <div className="end-party cheer">
               {AVATARS.map((a) => (
-                <Sprite key={a.id} avatar={a.id} size={52} />
+                <Sprite key={a.id} avatar={a.id} size={52} walk />
               ))}
             </div>
             {t >= FINALE + 2600 && (
@@ -387,9 +559,10 @@ function TrailerScenes({ t, onReplay }: { t: number; onReplay: () => void }) {
                 <b>言葉の壁</b>
                 <small>THE LANGUAGE WALL</small>
                 <span>Bridge Kansai · 関西をつなぐ</span>
+                {t >= FINALE + 4000 && <em>Judged by TypeSafe Jev</em>}
               </div>
             )}
-            {t >= FINALE + 5000 && <PlayCard />}
+            {t >= FINALE + 5200 && <PlayCard />}
           </>
         )}
       </section>
