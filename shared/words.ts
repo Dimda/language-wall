@@ -1,45 +1,151 @@
 import type { Term } from './types';
 
 /**
- * Casual, everyday words on a "bridging" theme: meeting people, making friends, getting along —
- * plus a little Kansai flavour. Easy to explain without any special vocabulary.
+ * Casual, everyday vocabulary on a "bridging" theme — meeting people, friendship, food, travel,
+ * feelings and Kansai life — mixing single words with short phrases people actually say.
+ * Easy to explain without special vocabulary; phrases stay short enough to translate in one hop.
  */
 const ja = [
-  '友達', // friend
-  '仲直り', // making up after a fight
-  '待ち合わせ', // meeting up at a set place
-  'おもてなし', // heartfelt hospitality
-  '乾杯', // cheers!
-  'いただきます', // said before eating
-  'お疲れ様', // "good work / thanks for your effort"
-  '懐かしい', // nostalgic
-  'もったいない', // what a waste
-  '迷子', // lost (and can't find the way)
-  '花見', // cherry-blossom viewing party
-  '食べ放題', // all-you-can-eat
-  '居酒屋', // casual Japanese pub
-  '自撮り', // selfie
-  'おおきに', // Kansai "thank you"
-  'なんでやねん', // Kansai "why on earth?!"
+  // people & friendship
+  '友達',
+  '親友',
+  '仲直り',
+  '仲間',
+  '初対面',
+  '幼なじみ',
+  '人見知り',
+  '恩返し',
+  '思いやり',
+  '一期一会',
+  // greetings & everyday phrases
+  'よろしくお願いします',
+  'お疲れ様',
+  'いただきます',
+  'ごちそうさま',
+  'お先に失礼します',
+  '気をつけてね',
+  'また今度ね',
+  'お久しぶりです',
+  'おかえりなさい',
+  'いってらっしゃい',
+  'ありがとう、助かった！',
+  'どういたしまして',
+  '遠慮しないで',
+  '大丈夫？',
+  'お元気で',
+  '乾杯！',
+  // food & going out
+  'おもてなし',
+  '食べ放題',
+  '居酒屋',
+  '割り勘',
+  'お弁当',
+  'おすすめは何ですか？',
+  '二次会',
+  'ご当地グルメ',
+  '屋台',
+  'お土産',
+  // travel & places
+  '待ち合わせ',
+  '迷子',
+  '花見',
+  '花火大会',
+  '日帰り旅行',
+  '道に迷いました',
+  '駅まで歩いて行こう',
+  '満員電車',
+  '温泉',
+  '自撮り',
+  // feelings
+  '懐かしい',
+  'もったいない',
+  'うらやましい',
+  'ドキドキする',
+  'ほっとした',
+  '楽しみにしてるね',
+  '緊張してきた',
+  'がんばって！',
+  '恥ずかしい',
+  '寂しい',
+  // Kansai
+  'おおきに',
+  'なんでやねん',
+  'ほんまに？',
+  'めっちゃおいしい',
+  'まいど！',
+  'あかん',
+  'しんどい',
+  'ぼちぼちでんな',
 ];
 
 const en = [
+  // people & friendship
   'bridge',
+  'best friend',
+  'make friends',
+  'teamwork',
+  'neighbor',
+  'roommate',
+  'old friend',
+  'trust',
+  'kindness',
+  'first impression',
+  // conversation & everyday phrases
   'break the ice',
   'small talk',
-  'best friend',
-  'high five',
-  'homesick',
-  'road trip',
-  'hang out',
-  'potluck',
-  'group photo',
-  'inside joke',
   'long time no see',
-  'teamwork',
+  'nice to meet you',
+  'how have you been?',
+  'take care',
+  'see you soon',
+  'thanks a lot!',
+  'no worries',
+  'my treat',
+  'good luck!',
+  'cheer up',
+  "I'm on my way",
+  'sorry I\'m late',
+  'what do you recommend?',
+  'can you say that again?',
+  // food & going out
+  'potluck',
   'welcome party',
+  'all you can eat',
+  'leftovers',
+  'street food',
+  'split the bill',
+  "let's grab lunch",
+  'a table for two',
+  'home cooking',
+  'birthday cake',
+  // travel & places
+  'road trip',
+  'day trip',
+  'group photo',
+  'souvenir',
+  'hometown',
+  'train station',
+  'get lost',
+  "let's meet at the station",
+  'rush hour',
+  'a window seat',
+  // feelings & fun
+  'homesick',
+  'high five',
+  'hang out',
+  'inside joke',
   'sleepover',
-  'make friends',
+  'nervous',
+  'excited',
+  'proud of you',
+  'I miss you',
+  'that was fun!',
+  'feel at home',
+  'butterflies in my stomach',
+  'piece of cake',
+  'time flies',
+  'better late than never',
+  'on the same page',
 ];
 
 export const WORDS: Term[] = [
