@@ -117,7 +117,7 @@ export const IMPACT_MS = 1300;
 export interface LogEntry {
   id: number;
   text: string;
-  kind: 'info' | 'damage' | 'crit' | 'boss' | 'system' | 'fizzle';
+  kind: 'info' | 'damage' | 'crit' | 'boss' | 'system' | 'fizzle' | 'proximity';
 }
 
 export interface Snapshot {

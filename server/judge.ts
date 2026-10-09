@@ -101,6 +101,10 @@ export const WEIGHTS = { exact: 100, same_concept: 70, related: 30, lost: 0 } as
 export const CRIT_THRESHOLD = 0.9;
 export const CRIT_MULTIPLIER = 1.5;
 
+/** How much meaning survived, 0–100: the verdict mix weighted like damage (exact 100, same 70, related 30). */
+export const proximity = (r: JudgeResult) =>
+  Math.round(r.exact * 100 + r.same_concept * 70 + r.related * 30);
+
 export const BROKEN: JudgeResult = { exact: 0, same_concept: 0, related: 0, lost: 1 };
 
 export function damageFrom(r: JudgeResult): { damage: number; tier: Tier } {

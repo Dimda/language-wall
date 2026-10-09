@@ -25,7 +25,9 @@ Env vars: `PORT` (production), `API_PORT` (dev API), `HOP_SECONDS` (time per hop
 
 ## How it plays
 
-- Up to 30 players (bots included); the join screen shows "party full" beyond that.
+- 3–30 players (bots included): the host can't start with fewer than 3; the join screen shows "party full" beyond 30.
+- The host can add/remove bots in the lobby (dev mode) and end a running game for everyone (■ END GAME).
+- The battle log shows each spell's proximity: how much meaning survived (exact/same/related/lost from the judge).
 - When the battle starts, players are split into the fewest teams of at most 5, as evenly as possible
   (21 players → 5·4·4·4·4). Late joiners go to the smallest team.
 - Each round every team casts one chain together: every member translates once, alternating JA ⇄ EN.

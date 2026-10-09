@@ -73,12 +73,23 @@ io.on('connection', (socket) => {
     if (pid && typeof chainId === 'string' && typeof text === 'string') game.submit(pid, chainId, text);
   });
 
+  socket.on('finalize', () => {
+    const pid = id();
+    if (pid) game.finalize(pid);
+  });
+
   socket.on('restart', () => {
     const pid = id();
     if (pid) game.restart(pid);
   });
 
   socket.on('addBot', () => game.addBot());
+
+  socket.on('removeBot', (payload) => {
+    const pid = id();
+    const botId = typeof payload?.botId === 'string' ? payload.botId : undefined;
+    if (pid) game.removeBot(pid, botId);
+  });
 
   socket.on('disconnect', async () => {
     const pid = id();

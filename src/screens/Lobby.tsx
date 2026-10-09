@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
-import { MAX_PLAYERS, MAX_TEAM_SIZE, teamSizes } from '../../shared/teams';
+import { MAX_PLAYERS, MAX_TEAM_SIZE, MIN_PLAYERS, teamSizes } from '../../shared/teams';
 import type { PlayerPublic, Snapshot } from '../../shared/types';
 import { audio } from '../audio';
 import { Sprite } from '../components/sprites';
@@ -24,6 +24,8 @@ function JoinQr({ size }: { size: number }) {
 export function Lobby({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic | null }) {
   const players = snapshot.players.filter((p) => p.connected);
   const sizes = teamSizes(players.length);
+  const enough = players.length >= MIN_PLAYERS;
+  const bots = players.filter((p) => p.isBot);
 
   return (
     <div className={`screen center lobby-screen ${isScreen ? 'projector' : ''}`}>
@@ -42,6 +44,17 @@ export function Lobby({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic |
               <span className="fighter-name">{p.name}</span>
               <Sprite avatar={p.avatar} size={players.length > 12 ? (isScreen ? 48 : 36) : isScreen ? 72 : 56} />
               <small>{p.isHost ? '★HOST' : p.isBot ? 'BOT' : ''}</small>
+              {p.isBot && me?.isHost && (
+                <button
+                  type="button"
+                  className="remove-bot"
+                  aria-label={`Remove ${p.name}`}
+                  title="ボットを外す / Remove bot"
+                  onClick={() => socket.emit('removeBot', { botId: p.id })}
+                >
+                  ✕
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -59,9 +72,16 @@ export function Lobby({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic |
                   + BOT
                 </button>
               )}
+              {bots.length > 0 && (
+                <button type="button" className="btn" onClick={() => socket.emit('removeBot', {})}>
+                  − BOT
+                </button>
+              )}
               <button
                 type="button"
                 className="btn primary"
+                disabled={!enough}
+                title={enough ? undefined : `${MIN_PLAYERS}人以上必要です / Need at least ${MIN_PLAYERS} players`}
                 onClick={() => {
                   audio.sfx('submit');
                   socket.emit('start');
@@ -70,6 +90,11 @@ export function Lobby({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic |
                 ▶ FIGHT!
               </button>
             </div>
+            {!enough && (
+              <p className="warn min-players">
+                {MIN_PLAYERS}人以上必要です（あと{MIN_PLAYERS - players.length}人） / Need at least {MIN_PLAYERS} players ({MIN_PLAYERS - players.length} more)
+              </p>
+            )}
           </div>
         ) : (
           <p className="blink">{isScreen ? `${players.length}人 準備OK / ${players.length} ready` : 'ホストの開始を待っています… / Waiting for the host to start…'}</p>

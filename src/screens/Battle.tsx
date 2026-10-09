@@ -9,7 +9,7 @@ import { ResolveWindow, stageAt, TIER_LABEL } from '../components/ResolveWindow'
 import { ELEMENT_COLOR, ELEMENT_LABEL } from '../components/sprites';
 import { TaskPanel } from '../components/TaskPanel';
 import { HpBar } from '../components/ui';
-import { isScreen, useGame } from '../net';
+import { isScreen, socket, useGame } from '../net';
 import { SpellFX } from '../spellfx';
 
 interface Float {
@@ -228,6 +228,19 @@ export function Battle({ snapshot, me }: { snapshot: Snapshot; me: PlayerPublic 
         <div className="battle-top">
           <HpBar label={narrow ? '言葉の壁' : '言葉の壁 / THE LANGUAGE WALL'} hp={boss.hp} max={boss.maxHp} variant="boss" />
           <span className="round-tag">ROUND {round}</span>
+          {me?.isHost && (
+            <button
+              type="button"
+              className="btn end-game"
+              onClick={() => {
+                if (window.confirm('ゲームを終了して全員ロビーに戻りますか？\nEnd the game and send everyone back to the lobby?')) {
+                  socket.emit('finalize');
+                }
+              }}
+            >
+              ■ 終了 / END GAME
+            </button>
+          )}
         </div>
 
         <div ref={stageRef} className={`stage ${gridTeams ? 'many-teams' : ''}`}>

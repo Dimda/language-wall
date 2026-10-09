@@ -32,7 +32,7 @@ function setup(timing: Partial<typeof FAST> = {}) {
     resolve: (t) => resolves.push(t),
     bossAttack: () => {},
   };
-  const game = new Game(out, { judge: mockJudge, devMode: true, timing: { ...FAST, ...timing } });
+  const game = new Game(out, { judge: mockJudge, devMode: true, minPlayers: 1, timing: { ...FAST, ...timing } });
   const last = () => snaps[snaps.length - 1];
   return { game, tasks, resolves, last };
 }
@@ -168,7 +168,7 @@ describe('answer guard in game', () => {
     const tasks = new Map<string, Task | null>();
     const game = new Game(
       { snapshot: () => {}, task: (id, t) => tasks.set(id, t), resolve: () => {}, bossAttack: () => {}, rejected: (_id, r) => rejections.push(r.en) },
-      { judge: mockJudge, timing: FAST },
+      { judge: mockJudge, minPlayers: 1, timing: FAST },
     );
     game.join('a', 'A', 'obachan');
     game.join('b', 'B', 'gaijin');
@@ -181,13 +181,62 @@ describe('answer guard in game', () => {
   });
 });
 
+describe('session controls', () => {
+  const make = () => {
+    const snaps: Snapshot[] = [];
+    const game = new Game({ snapshot: (s) => snaps.push(s), task: () => {}, resolve: () => {}, bossAttack: () => {} }, { judge: mockJudge, devMode: true, timing: FAST });
+    return { game, last: () => snaps[snaps.length - 1] };
+  };
+
+  it('needs at least 3 players to start (bots count)', () => {
+    const { game, last } = make();
+    game.join('h', 'Host', 'obachan');
+    game.addBot();
+    game.start('h');
+    expect(last().phase).toBe('lobby');
+    expect(last().log.at(-1)?.text).toContain('at least 3');
+    game.addBot();
+    game.start('h');
+    expect(last().phase).toBe('battle');
+  });
+
+  it('only the host can finalize, and it returns everyone to the lobby', () => {
+    const { game, last } = make();
+    game.join('h', 'Host', 'obachan');
+    game.join('p', 'Player', 'gaijin');
+    game.addBot();
+    game.start('h');
+    game.finalize('p');
+    expect(last().phase).toBe('battle');
+    game.finalize('h');
+    expect(last().phase).toBe('lobby');
+    expect(last().players).toHaveLength(3);
+    expect(last().log.at(-1)?.text).toContain('ended the game');
+  });
+
+  it('the host can remove bots in the lobby', () => {
+    const { game, last } = make();
+    game.join('h', 'Host', 'obachan');
+    game.join('p', 'Player', 'gaijin');
+    game.addBot();
+    game.addBot();
+    const [firstBot] = last().players.filter((p) => p.isBot);
+    game.removeBot('p'); // not the host
+    expect(last().players.filter((p) => p.isBot)).toHaveLength(2);
+    game.removeBot('h', firstBot.id);
+    expect(last().players.some((p) => p.id === firstBot.id)).toBe(false);
+    game.removeBot('h'); // newest
+    expect(last().players.filter((p) => p.isBot)).toHaveLength(0);
+  });
+});
+
 describe('boss death', () => {
   it('stays in battle at 0 HP while the death plays, then declares victory', async () => {
     const snaps: Snapshot[] = [];
     const tasks = new Map<string, Task | null>();
     const game = new Game(
       { snapshot: (s) => snaps.push(s), task: (id, t) => tasks.set(id, t), resolve: () => {}, bossAttack: () => {} },
-      { judge: async () => ({ exact: 1, same_concept: 0, related: 0, lost: 0 }), timing: { ...FAST, bossDeathMs: 60 } },
+      { judge: async () => ({ exact: 1, same_concept: 0, related: 0, lost: 0 }), minPlayers: 1, timing: { ...FAST, bossDeathMs: 60 } },
     );
     game.join('a', 'A', 'obachan');
     game.start('a');

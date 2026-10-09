@@ -1,5 +1,5 @@
 import { checkAnswer, type Rejection } from '../shared/guard';
-import { chainMultiplier, MAX_PLAYERS, MAX_TEAM_SIZE, teamName, teamSizes } from '../shared/teams';
+import { chainMultiplier, MAX_PLAYERS, MAX_TEAM_SIZE, MIN_PLAYERS, teamName, teamSizes } from '../shared/teams';
 import { WORDS } from '../shared/words';
 import {
   AVATAR_IDS,
@@ -22,7 +22,7 @@ import {
   type Turn,
 } from '../shared/types';
 import { BOSS_HP_PER_PLAYER, type BossDef, LANGUAGE_WALL, PARTY_MAX_HP } from './boss';
-import { BROKEN, damageFrom, type Judge, judge as defaultJudge } from './judge';
+import { BROKEN, damageFrom, type Judge, judge as defaultJudge, proximity } from './judge';
 
 export interface Outbox {
   snapshot(s: Snapshot): void;
@@ -69,6 +69,8 @@ export interface GameOptions {
   boss?: BossDef;
   devMode?: boolean;
   timing?: Partial<Timing>;
+  /** Minimum connected players to start a battle (default MIN_PLAYERS). */
+  minPlayers?: number;
 }
 
 interface Player {
@@ -126,6 +128,7 @@ export class Game {
   private readonly judge: Judge;
   private readonly boss: BossDef;
   private readonly devMode: boolean;
+  private readonly minPlayers: number;
   readonly timing: Timing;
 
   constructor(
@@ -135,6 +138,7 @@ export class Game {
     this.judge = opts.judge ?? defaultJudge;
     this.boss = opts.boss ?? LANGUAGE_WALL;
     this.devMode = opts.devMode ?? false;
+    this.minPlayers = opts.minPlayers ?? MIN_PLAYERS;
     this.timing = { ...DEFAULT_TIMING, ...opts.timing };
   }
 
@@ -223,6 +227,17 @@ export class Game {
     this.broadcast();
   }
 
+  /** Host removes a bot in the lobby: the given one, or the most recently added. */
+  removeBot(byId: string, botId?: string): void {
+    if (this.phase !== 'lobby' || byId !== this.hostId()) return;
+    const bots = [...this.players.values()].filter((p) => p.isBot).sort((a, b) => b.joinedAt - a.joinedAt);
+    const bot = botId ? bots.find((b) => b.id === botId) : bots[0];
+    if (!bot) return;
+    this.players.delete(bot.id);
+    this.addLog(`${bot.name} left the party.`, 'info');
+    this.broadcast();
+  }
+
   hostId(): string | null {
     const humans = [...this.players.values()].filter((p) => !p.isBot && p.connected);
     humans.sort((a, b) => a.joinedAt - b.joinedAt);
@@ -234,7 +249,11 @@ export class Game {
   start(byId: string): void {
     if (this.phase !== 'lobby' || byId !== this.hostId()) return;
     const active = this.activePlayers();
-    if (active.length === 0) return;
+    if (active.length < Math.max(1, this.minPlayers)) {
+      this.addLog(`${this.minPlayers}人以上必要です / Need at least ${this.minPlayers} players to start`, 'system');
+      this.broadcast();
+      return;
+    }
     this.formTeams(active);
     this.phase = 'battle';
     this.round = 0;
@@ -245,6 +264,14 @@ export class Game {
     this.addLog(`${this.boss.name} blocks the way! Build the bridge!`, 'system');
     this.addLog(`${this.teams.length} team${this.teams.length > 1 ? 's' : ''} formed: ${this.teams.map((t) => `${t.nameEn} (${t.members.length})`).join(', ')}`, 'info');
     this.startRound();
+  }
+
+  /** Host ends the current session from anywhere in a battle: everyone goes back to the lobby. */
+  finalize(byId: string): void {
+    if (this.phase === 'lobby' || byId !== this.hostId()) return;
+    this.restart(byId);
+    this.addLog('ホストがゲームを終了しました / The host ended the game', 'system');
+    this.broadcast();
   }
 
   restart(byId: string): void {
@@ -496,6 +523,14 @@ export class Game {
       this.addLog(
         `${names} cast ${spellName(spell.element)} — ${spell.term.text}! ${spell.tier === 'perfect' ? 'PERFECT! ' : ''}${spell.damage} damage!${bonus}`,
         spell.tier === 'perfect' ? 'crit' : 'damage',
+      );
+    }
+    if (!spell.broken) {
+      const pct = (v: number) => Math.round(v * 100);
+      const j = spell.judge;
+      this.addLog(
+        `↳ 意味の近さ / proximity ${proximity(j)}% — exact ${pct(j.exact)} · same ${pct(j.same_concept)} · related ${pct(j.related)} · lost ${pct(j.lost)}`,
+        'proximity',
       );
     }
     if (this.bossHp <= 0) this.bossDefeated();
