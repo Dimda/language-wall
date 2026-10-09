@@ -6,6 +6,11 @@ import { Server } from 'socket.io';
 import type { ClientToServer, ServerToClient } from '../shared/protocol';
 import { Game } from './game';
 
+// Local secrets (e.g. TYPESAFE_API_KEY) live in .env, which is git-ignored. Hosts set real env vars.
+try {
+  process.loadEnvFile();
+} catch {}
+
 const prod = process.env.NODE_ENV === 'production';
 // In production the host (Render) assigns PORT. In dev, PORT belongs to Vite, so the API uses API_PORT.
 const PORT = Number((prod ? process.env.PORT : process.env.API_PORT) ?? 3210);
@@ -86,4 +91,5 @@ io.on('connection', (socket) => {
 
 http.listen(PORT, '0.0.0.0', () => {
   console.log(`言葉の壁 server on http://localhost:${PORT} ${prod ? '(production)' : '(dev)'}`);
+  console.log(`judge: ${process.env.TYPESAFE_API_KEY ? 'TypeSafe Jev' : 'mock (set TYPESAFE_API_KEY to use Jev)'}`);
 });

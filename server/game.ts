@@ -464,7 +464,8 @@ export class Game {
   private async judgeChain(c: Chain): Promise<ResolvedChain> {
     const final = c.hops[c.hops.length - 1]?.output ?? '';
     const broken = c.status !== 'done';
-    const result = broken ? BROKEN : await this.judge(c.term.text, final, c.term.lang);
+    const finalLang = c.hops[c.hops.length - 1]?.toLang ?? c.term.lang;
+    const result = broken ? BROKEN : await this.judge(c.term.text, final, c.term.lang, finalLang);
     const multiplier = chainMultiplier(c.order.length);
     const base = broken ? { damage: 0, tier: 'fizzle' as const } : damageFrom(result);
     const team = this.teams.find((t) => t.id === c.teamId);
