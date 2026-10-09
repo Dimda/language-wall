@@ -7,7 +7,8 @@
     "build": "vite build",
     "start": "NODE_ENV=production tsx server/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "vocab:ruby": "tsx scripts/gen-vocab-ruby.ts"
   },
   "dependencies": {
     "express": "5.2.1",

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { Server } from 'socket.io';
 import type { ClientToServer, ServerToClient } from '../shared/protocol';
-import { furiganaReady } from './furigana';
+import { furiganaLoadMs, furiganaReady, furiganaStatus } from './furigana';
 import { Game } from './game';
 
 // Local secrets (e.g. TYPESAFE_API_KEY) live in .env, which is git-ignored. Hosts set real env vars.
@@ -20,6 +20,18 @@ const app = express();
 const http = createServer(app);
 const io = new Server<ClientToServer, ServerToClient, object, { playerId?: string }>(http, {
   cors: prod ? undefined : { origin: true },
+});
+
+// Quick status check (no secrets): which judge is active and whether free-text furigana is loaded.
+app.get('/api/health', (_req, res) => {
+  res.json({
+    ok: true,
+    judge: process.env.TYPESAFE_API_KEY ? 'jev' : 'mock',
+    furigana: furiganaStatus,
+    furiganaLoadMs,
+    uptimeSec: Math.round(process.uptime()),
+    memoryMb: Math.round(process.memoryUsage().rss / 1e6),
+  });
 });
 
 if (prod) {
@@ -103,6 +115,6 @@ io.on('connection', (socket) => {
 
 http.listen(PORT, '0.0.0.0', () => {
   console.log(`言葉の壁 server on http://localhost:${PORT} ${prod ? '(production)' : '(dev)'}`);
-  void furiganaReady.then(() => console.log('furigana: dictionary loaded'));
+  void furiganaReady.then(() => console.log(`furigana: ${furiganaStatus} after ${furiganaLoadMs}ms`));
   console.log(`judge: ${process.env.TYPESAFE_API_KEY ? 'TypeSafe Jev' : 'mock (set TYPESAFE_API_KEY to use Jev)'}`);
 });

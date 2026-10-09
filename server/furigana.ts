@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import kuromoji from 'kuromoji';
 import type { Ruby } from '../shared/types';
+import { VOCAB_RUBY } from '../shared/vocabRuby';
 
 /**
  * Furigana (hiragana readings over kanji) for any Japanese text, via the kuromoji analyzer.
@@ -21,13 +22,24 @@ const OVERRIDES: Record<string, Ruby> = {
 
 let tokenizer: Tokenizer | null = null;
 
+/** For the health endpoint: whether free-text furigana is available yet. */
+export let furiganaStatus: 'loading' | 'ready' | 'failed' = 'loading';
+export let furiganaLoadMs: number | null = null;
+const loadStart = Date.now();
+
 const require = createRequire(import.meta.url);
 const dicPath = join(dirname(require.resolve('kuromoji/package.json')), 'dict');
 
 export const furiganaReady: Promise<void> = new Promise((resolve) => {
   kuromoji.builder({ dicPath }).build((err, t) => {
-    if (err) console.warn('[furigana] dictionary failed to load:', err.message);
-    else tokenizer = t;
+    furiganaLoadMs = Date.now() - loadStart;
+    if (err) {
+      furiganaStatus = 'failed';
+      console.warn('[furigana] dictionary failed to load:', err.message);
+    } else {
+      tokenizer = t;
+      furiganaStatus = 'ready';
+    }
     resolve();
   });
 });
@@ -54,6 +66,8 @@ function splitWord(surface: string, reading: string): Ruby {
 export function furigana(text: string): Ruby | undefined {
   if (!HAS_KANJI.test(text)) return undefined;
   if (OVERRIDES[text]) return OVERRIDES[text];
+  // Vocabulary terms are pre-computed, so they never depend on the analyzer being loaded.
+  if (VOCAB_RUBY[text]) return VOCAB_RUBY[text];
   if (!tokenizer) return undefined;
   const out: Ruby = [];
   for (const token of tokenizer.tokenize(text)) {

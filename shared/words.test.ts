@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { VOCAB_RUBY } from './vocabRuby';
 import { WORDS } from './words';
 
 describe('word pool', () => {
@@ -21,6 +22,16 @@ describe('word pool', () => {
     for (const w of WORDS) {
       const hasJa = /[぀-ヿ㐀-鿿]/.test(w.text);
       expect(hasJa).toBe(w.lang === 'ja');
+    }
+  });
+});
+
+describe('vocabulary furigana', () => {
+  it('has pre-computed readings for every Japanese term with kanji', () => {
+    for (const w of WORDS.filter((w) => w.lang === 'ja' && /[\u3400-\u9fff]/.test(w.text))) {
+      expect(VOCAB_RUBY[w.text], `missing furigana for ${w.text} — run pnpm vocab:ruby`).toBeDefined();
+      const flat = VOCAB_RUBY[w.text].map((seg) => (typeof seg === 'string' ? seg : seg[0])).join('');
+      expect(flat).toBe(w.text);
     }
   });
 });
