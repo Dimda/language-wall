@@ -1,7 +1,30 @@
 # 言葉の壁 / The Language Wall
 
 Co-op browser game for the "Bridge Kansai / 関西をつなぐ" hackathon: Japanese- and English-speaking
-developers break a wall by passing dev jargon through a cross-language telephone game.
+players break a wall by passing everyday words and phrases through a cross-language telephone game,
+judged by [TypeSafe Jev](https://typesafe.ai).
+
+Live: https://language-wall.onrender.com/ · Projector view: https://language-wall.onrender.com/?screen ·
+Trailer: https://language-wall.onrender.com/?trailer
+
+## Hackathon scope
+
+Some preparation was done **before** the hackathon (2026-10-07 → 2026-10-08, up to and including
+commit [`285a7e5`](https://github.com/Dimda/language-wall/commit/285a7e5)): the playable game itself —
+realtime server, teams and chains, boss, art, music, spell effects, layout and the answer guard — running
+with a placeholder (mock) judge.
+
+**The hackathon starts at commit [`a2f72a4`](https://github.com/Dimda/language-wall/commit/a2f72a4)**
+(2026-10-09). Its main goal was the **Jev integration**: replacing the mock judge with
+[TypeSafe Jev](https://typesafe.ai), which scores how much meaning survived each translation chain
+(exact / same idea / related / lost) and drives the damage. Alongside that, refinements:
+
+- proximity values in the battle log, a host-only END GAME button, a 3-player minimum, removable bots
+- a bigger casual vocabulary with short phrases (126 terms)
+- furigana (hiragana readings) over kanji, and chains starting in Japanese or English with equal odds
+
+See everything done during the hackathon:
+[`285a7e5...main`](https://github.com/Dimda/language-wall/compare/285a7e5...main).
 
 ## Run locally
 
@@ -21,7 +44,9 @@ pnpm build && pnpm start   # everything on :3210 (or $PORT)
 
 Deployed on Render via `render.yaml` (free web service; it sleeps when idle, so open it a few minutes before the demo).
 
-Env vars: `PORT` (production), `API_PORT` (dev API), `HOP_SECONDS` (time per hop, default 45), `DEV_BOTS=1` (host can add bots).
+Env vars: `TYPESAFE_API_KEY` (enables the Jev judge; without it a mock judge is used — put it in a git-ignored
+`.env` locally and in Render's Environment Variables in production), `PORT` (production), `API_PORT` (dev API),
+`HOP_SECONDS` (time per hop, default 45), `DEV_BOTS=1` (host can add bots).
 
 ## How it plays
 
