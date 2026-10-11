@@ -2,6 +2,13 @@
 
 **[English](#english) · [日本語](#日本語)**
 
+**Made by [@p-kyrylo](https://github.com/p-kyrylo) and [@dimda](https://github.com/Dimda)**, pair vibe coded with
+[Claude Code](https://claude.com/claude-code) at one keyboard. Every commit was a joint effort, even though git only
+shows one author.
+**[@p-kyrylo](https://github.com/p-kyrylo) と [@dimda](https://github.com/Dimda) の2人で制作。** 1台のキーボードで
+[Claude Code](https://claude.com/claude-code) とペアでバイブコーディングしました。git のコミット作者は1人ですが、
+すべて2人の共同作業です。
+
 **▶ Play / プレイ: https://language-wall.onrender.com/** (hosted on Render / Render でホスティング)
 
 | | URL |
@@ -88,6 +95,11 @@ Env vars:
   locally and in Render's **Environment Variables** in production (never in the code).
 - `PORT` (production), `API_PORT` (dev API), `HOP_SECONDS` (time per hop, default 45), `DEV_BOTS=1` (host can add bots).
 
+### Credits
+
+Made by [@p-kyrylo](https://github.com/p-kyrylo) and [@dimda](https://github.com/Dimda) — pair vibe coded with
+Claude Code. The commits are under one account, but the game was designed and built together.
+
 ### Tech
 
 React 19 + TypeScript + Vite · Node 24 + Express + Socket.IO (server-authoritative game state) ·
@@ -170,6 +182,11 @@ pnpm build && pnpm start   # すべて :3210（または $PORT）で動作
   含まれない `.env` に、本番では Render の **Environment Variables** に設定してください（コードには書きません）。
 - `PORT`（本番）、`API_PORT`（開発用 API）、`HOP_SECONDS`（1人あたりの制限時間、初期値45秒）、
   `DEV_BOTS=1`（ホストがボットを追加可能）
+
+### 制作
+
+[@p-kyrylo](https://github.com/p-kyrylo) と [@dimda](https://github.com/Dimda) — Claude Code とペアでバイブコーディング。
+コミットは1つのアカウントからですが、ゲームの企画・制作はすべて2人で行いました。
 
 ### 技術
 
